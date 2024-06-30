@@ -31,8 +31,11 @@ dev = [
     "pytest-cov>=5.0.0",
 ]
 
+[tool.ruff]
+include = ["pyproject.toml", "tycmd.py", "tests/*.py"]
+
 [tool.mypy]
-files = [ "tycmd.py" ]
+files = ["tycmd.py"]
 
 [tool.pytest.ini_options]
 addopts    = "--cov=tycmd --cov-report=html --cov-report=xml"
