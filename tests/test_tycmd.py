@@ -12,13 +12,13 @@ def test_version():
 
 
 def test__assemble_tag():
-    output = tycmd._assemble_tag(serial='serial')
-    assert output == ['-B', 'serial']
-    output = tycmd._assemble_tag(family='family')
-    assert output == ['-B', '-family']
-    output = tycmd._assemble_tag(port='port')
-    assert output == ['-B', '@port']
-    output = tycmd._assemble_tag(serial='serial', family='family', port='port')
-    assert output == ['-B', 'serial-family@port']
+    output = tycmd._assemble_tag(serial="serial")
+    assert output == ["-B", "serial"]
+    output = tycmd._assemble_tag(family="family")
+    assert output == ["-B", "-family"]
+    output = tycmd._assemble_tag(port="port")
+    assert output == ["-B", "@port"]
+    output = tycmd._assemble_tag(serial="serial", family="family", port="port")
+    assert output == ["-B", "serial-family@port"]
     output = tycmd._assemble_tag()
     assert output == []
