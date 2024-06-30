@@ -12,7 +12,7 @@ log = getLogger(__name__)
 
 def list_boards(verbose: bool = True) -> list[dict]:
     """
-    List available boards
+    List available boards.
 
     Parameters
     ----------
@@ -21,7 +21,7 @@ def list_boards(verbose: bool = True) -> list[dict]:
 
     Returns
     -------
-    list[dict[str, str]]
+    list[dict]
         List of available devices.
     """
     args = ["tycmd", "list", "-O", "json"] + (["-v"] if verbose else [])
