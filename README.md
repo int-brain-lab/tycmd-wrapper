@@ -1,6 +1,6 @@
 # tycmd-wrapper
 
-A Python wrapper for [tycmd](https://github.com/Koromix/tytools) by [Niels 
+A Python wrapper for [tycmd](https://koromix.dev/tytools) by [Niels 
 Martignène](https://github.com/Koromix/).
 
 Documentation: https://int-brain-lab.github.io/tycmd-wrapper
