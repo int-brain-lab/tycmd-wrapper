@@ -1,7 +1,21 @@
 on: workflow_dispatch
 
 jobs:
+  Ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chartboost/ruff-action@v1
+        name: ruff check
+        with:
+          args: 'check --output-format=github'
+      - uses: chartboost/ruff-action@v1
+        name: ruff format
+        with:
+          args: 'format --check'
+
   Testing:
+    needs: [Ruff]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
