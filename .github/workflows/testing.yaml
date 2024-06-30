@@ -14,10 +14,26 @@ jobs:
         uses: pdm-project/setup-pdm@v4
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install dependencies
         run: |
           pdm sync -d
       - name: Run Tests
         run: |
           pdm run -v pytest tests
+      - name: coveralls.io
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: ${{ matrix.python-version }}, ${{ matrix.os }}
+          parallel: true
+          file: coverage.xml
+          compare-ref: iblrigv8
+
+    Finish:
+      needs: [Testing]
+      if: ${{ always() }}
+      runs-on: ubuntu-latest
+      steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true

@@ -28,4 +28,13 @@ dev = [
     "sphinx>=7.3.7",
     "sphinx-autobuild>=2024.4.16",
     "sphinx-rtd-theme>=2.0.0",
+    "pytest-cov>=5.0.0",
 ]
+
+[tool.mypy]
+files = [ "tycmd.py" ]
+
+[tool.pytest.ini_options]
+addopts    = "--cov=tycmd --cov-report=html --cov-report=xml"
+minversion = "6.0"
+testpaths  = [ "tests" ]
