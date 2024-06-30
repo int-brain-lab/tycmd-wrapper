@@ -7,7 +7,6 @@ jobs:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
         os: [ubuntu-latest, macOS-latest, windows-latest]
-
     steps:
       - uses: actions/checkout@v4
       - name: Set up PDM
@@ -28,12 +27,12 @@ jobs:
           file: coverage.xml
           compare-ref: iblrigv8
 
-    Finish:
-      needs: [Testing]
-      if: ${{ always() }}
-      runs-on: ubuntu-latest
-      steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true
+  Finish:
+    needs: [Testing]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@v2
+      with:
+        parallel-finished: true
