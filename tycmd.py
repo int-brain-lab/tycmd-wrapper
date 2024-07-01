@@ -65,9 +65,9 @@ def reset(
 
 
 def _call_tycmd(
-    args: list[str], serial: str | None = None, port: str | None = None
+    args: list[str], serial: str | None = None, family: str | None = None, port: str | None = None
 ) -> str:
-    tag = _assemble_tag(serial=serial, port=port)
+    tag = _assemble_tag(serial=serial, family=family, port=port)
     args = ["tycmd"] + args + tag
     return check_output(args, text=True)
 
