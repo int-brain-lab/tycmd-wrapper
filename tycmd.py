@@ -1,3 +1,5 @@
+"""A python wrapper for tycmd."""
+
 from subprocess import check_output, CalledProcessError
 import json
 import re
@@ -5,7 +7,7 @@ from logging import getLogger
 
 # scripts_path = sysconfig.get_path('scripts')
 
-__version__ = '0.1.0'
+__version__ = "0.1.0"
 _TYCMD_VERSION = "0.9.9"
 
 log = getLogger(__name__)
@@ -85,7 +87,10 @@ def reset(
 
 
 def _call_tycmd(
-    args: list[str], serial: str | None = None, family: str | None = None, port: str | None = None
+    args: list[str],
+    serial: str | None = None,
+    family: str | None = None,
+    port: str | None = None,
 ) -> str:
     tag = _assemble_tag(serial=serial, family=family, port=port)
     args = ["tycmd"] + args + tag
