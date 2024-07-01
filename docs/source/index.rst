@@ -7,3 +7,8 @@ tycmd-wrapper
 
    api
    dev_guide
+
+.. toctree::
+   :maxdepth: 1
+
+   changelog

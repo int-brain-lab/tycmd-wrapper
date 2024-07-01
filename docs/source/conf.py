@@ -15,6 +15,7 @@ release = version
 
 extensions = [
     'sphinx.ext.autodoc',
+    'myst_parser',
 ]
 source_suffix = ['.rst', '.md']
 templates_path = ['_templates']
