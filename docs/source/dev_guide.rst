@@ -47,7 +47,7 @@ Building the documentation
 
 .. code-block:: bash
 
-   pdm run sphinx-build.exe .\docs\source\ .\docs\build
+   pdm run sphinx-build ./docs/source ./docs/build
 
 
 Building the package

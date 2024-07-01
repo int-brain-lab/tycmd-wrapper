@@ -1,17 +1,24 @@
 [project]
 name = "tycmd-wrapper"
-version = "0.1.0"
 description = "A python wrapper for tycmd"
 authors = [
   {name = "Florian Rau", email = "bimac@users.noreply.github.com"},
 ]
 requires-python = ">=3.10"
 readme = "README.md"
+repository = "https://github.com/int-brain-lab/tycmd-wrapper/"
+documentation = "https://int-brain-lab.github.io/tycmd-wrapper/"
 license = {text = "MIT"}
+keywords = ["tycmd", "teensy", "firmware"]
+dynamic = ["version"]
 
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
+
+[tool.pdm.version]
+source = "file"
+path = "tycmd.py"
 
 [tool.pdm.build]
 includes = ["tycmd.py", "py.typed"]
