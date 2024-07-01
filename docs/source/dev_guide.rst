@@ -48,3 +48,11 @@ Building the documentation
 .. code-block:: bash
 
    pdm run sphinx-build.exe .\docs\source\ .\docs\build
+
+
+Building the package
+--------------------
+
+.. code-block:: bash
+
+   pdm build --config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"
