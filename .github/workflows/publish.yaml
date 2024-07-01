@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pdm-project/setup-pdm@v4
       - name: Build distribution packages
-        run: pdm build ${{ COMMON_BUILD_CONFIG }}
+        run: pdm build
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}
