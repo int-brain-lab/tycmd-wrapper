@@ -14,12 +14,10 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
+      - uses: pdm-project/setup-pdm@v4
       - name: Build distribution packages
         run: pdm build --config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"
-      - name: Store distribution packages
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: python-package-distributions
+          name: dist-${{ matrix.platform }}
           path: dist/
