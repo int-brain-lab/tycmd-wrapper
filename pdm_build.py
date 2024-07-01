@@ -36,7 +36,7 @@ def pdm_build_finalize(context: Context, artifact: Path):
             case "Linux" if "64bit" in architecture():
                 platform = 'linux_x86_64'
             case "Windows" if "64bit" in architecture():
-                platform = 'win-amd64'
+                platform = 'win_amd64'
             case "Darwin":
                 platform = 'macosx_10_9_x86_64'
         pattern = r'(^\w+-[\d\.]+)-.*'
