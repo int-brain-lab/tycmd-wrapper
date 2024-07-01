@@ -12,11 +12,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
+    env:
+      common-settings: --config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"
     steps:
       - uses: actions/checkout@v4
       - uses: pdm-project/setup-pdm@v4
       - name: Build distribution packages
-        run: pdm build --config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"
+        run: pdm build $common-settings
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}
