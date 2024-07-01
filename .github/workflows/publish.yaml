@@ -12,8 +12,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
-    env:
-      COMMON_BUILD_CONFIG: --config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"
     steps:
       - uses: actions/checkout@v4
       - uses: pdm-project/setup-pdm@v4
