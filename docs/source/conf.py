@@ -12,7 +12,6 @@ author = 'Florian Rau'
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx_inline_tabs'
 ]
 source_suffix = ['.rst', '.md']
 templates_path = ['_templates']
