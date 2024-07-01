@@ -13,14 +13,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v4
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v4
-      - name: Publish package distributions to PyPI
-        run: |
-          pdm build --config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"
-          pdm publish --no-build --repository testpypi
+      - name: Build the distribution packages
+        run: pdm build --config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
