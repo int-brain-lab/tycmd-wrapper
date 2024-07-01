@@ -1,22 +1,20 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+from datetime import date
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'tycmd-wrapper'
-copyright = '2024, Florian Rau'
+copyright = f'{date.today().year}, International Brain Laboratory'
 author = 'Florian Rau'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx_inline_tabs'
 ]
-
+source_suffix = ['.rst', '.md']
 templates_path = ['_templates']
 exclude_patterns = []
 

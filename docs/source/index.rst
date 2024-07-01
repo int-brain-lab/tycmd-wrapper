@@ -1,5 +1,9 @@
 tycmd-wrapper
 =============
 
-.. automodule:: tycmd
-   :members:
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   api
+   dev_guide
