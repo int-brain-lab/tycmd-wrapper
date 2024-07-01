@@ -56,6 +56,25 @@ def version(full: bool = False) -> str:
 def reset(
     serial: str | None = None, port: str | None = None, bootloader: bool = False
 ) -> bool:
+    """
+    Reset board.
+
+    Parameters
+    ----------
+    serial : str, optional
+        Serial number of board to be reset.
+
+    port : str, optional
+        Port of board to be reset.
+
+    bootloader : bool, optional
+        Switch board to bootloader if True. Default is False.
+
+    Returns
+    -------
+    bool
+        True if board was reset successfully, False otherwise.
+    """
     try:
         _call_tycmd(
             ["reset"] + (["-b"] if bootloader else []), serial=serial, port=port
