@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
     env:
-      common_settings: --config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"
+      common_settings: ${{ '--config-setting="--python-tag=py3" --config-setting="--py-limited-api=none"' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pdm-project/setup-pdm@v4
