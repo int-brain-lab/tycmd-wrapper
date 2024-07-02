@@ -6,8 +6,11 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
+  tests:
+    uses: ./.github/workflows/testing.yaml
   build:
     name: Build release packages
+    needs: tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
