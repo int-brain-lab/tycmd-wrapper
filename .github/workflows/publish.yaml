@@ -28,4 +28,3 @@ jobs:
       with:
         merge-multiple: true
     - run: ls -R
-  clean:
