@@ -1,4 +1,4 @@
-name: PyPI
+name: Publish to PyPI
 on:
   workflow_dispatch:
   push:
@@ -6,12 +6,12 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  pypi-publish:
+  build:
     name: Build release packages
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: pdm-project/setup-pdm@v4
@@ -20,4 +20,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}
-          path: dist/*.whl
+          path: dist/*
+          retention-days: 1
+  publish:
+    name: Upload to PyPI
+    - uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - run: ls -R
+  clean:
