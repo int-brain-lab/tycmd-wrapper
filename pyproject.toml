@@ -22,7 +22,8 @@ path = "tycmd.py"
 
 [tool.pdm.build]
 includes = ["tycmd.py", "py.typed"]
-excludes = [".gitignore"]
+source-includes = ["bin/**/tycmd*", "tests", "docs", "*.md"]
+excludes = [".gitignore", "docs/build"]
 run-setuptools = false
 is-purelib = false
 
