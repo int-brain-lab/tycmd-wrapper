@@ -24,6 +24,7 @@ jobs:
           retention-days: 1
   publish:
     name: Upload to PyPI
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
