@@ -26,8 +26,16 @@ jobs:
     name: Upload to PyPI
     needs: build
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://test.pypi.org/p/tycmd-wrapper
+    permissions:
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
-      - run: ls -R
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
