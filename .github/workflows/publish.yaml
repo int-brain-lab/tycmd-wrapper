@@ -24,7 +24,9 @@ jobs:
           retention-days: 1
   publish:
     name: Upload to PyPI
-    - uses: actions/download-artifact@v4
-      with:
-        merge-multiple: true
-    - run: ls -R
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - run: ls -R
