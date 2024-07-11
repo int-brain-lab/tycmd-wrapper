@@ -23,7 +23,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}
-          path: dist/*
+          path: dist/*.whl
           retention-days: 1
   publish:
     name: Upload to PyPI
