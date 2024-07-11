@@ -35,11 +35,9 @@ jobs:
           cache: true
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: |
-          pdm sync -dG test
+        run: pdm sync -dG test
       - name: Run Tests
-        run: |
-          pdm run -v pytest tests
+        run: pdm run -v pytest tests
       - name: coveralls.io
         uses: coverallsapp/github-action@v2
         with:
