@@ -6,7 +6,7 @@ import json
 import re
 from logging import getLogger
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 _TYCMD_VERSION = "0.9.9"
 
 log = getLogger(__name__)
