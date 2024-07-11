@@ -5,9 +5,7 @@ import json
 import re
 from logging import getLogger
 
-# scripts_path = sysconfig.get_path('scripts')
-
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 _TYCMD_VERSION = "0.9.9"
 
 log = getLogger(__name__)
