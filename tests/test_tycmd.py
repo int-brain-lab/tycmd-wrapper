@@ -1,5 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import pytest
 
@@ -10,6 +11,12 @@ import re
 BLINK_HEX = Path(__file__).parent.joinpath("blink.hex").resolve()
 
 
+@pytest.fixture
+def mock_check_output():
+    with patch("tycmd.check_output") as mock_check_output:
+        yield mock_check_output
+
+
 def test_identify():
     with TemporaryDirectory() as temp_directory:
         firmware_file = Path(temp_directory).joinpath("firmware.hex")
@@ -17,6 +24,27 @@ def test_identify():
         with pytest.raises(RuntimeError):
             tycmd.identify(firmware_file)
     assert "Teensy 4.0" in tycmd.identify(BLINK_HEX)
+
+
+def test_list_boards(mock_check_output):
+    mock_check_output.return_value = (
+        '[\n  {"action": "add", "tag": "12345678-Teensy", "serial": "12345678", '
+        '"description": "USB Serial", "model": "Teensy 4.1", "location": "usb-3-3", '
+        '"capabilities": ["unique", "run", "rtc", "reboot", "serial"], '
+        '"interfaces": [["Serial", "/dev/ttyACM0"]]}\n]\n'
+    )
+    output = tycmd.list_boards()
+    mock_check_output.assert_called_once_with(
+        ["tycmd", "list", "-O", "json", "-v"], text=True
+    )
+    assert isinstance(output, list)
+    assert isinstance(output[0], dict)
+    assert output[0]["serial"] == "12345678"
+
+    mock_check_output.return_value = "[\n]\n"
+    output = tycmd.list_boards()
+    assert isinstance(output, list)
+    assert len(output) == 0
 
 
 def test_version():
