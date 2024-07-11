@@ -1,16 +1,38 @@
 """A python wrapper for tycmd."""
 
+from pathlib import Path
 from subprocess import check_output, CalledProcessError
 import json
 import re
 from logging import getLogger
 
-# scripts_path = sysconfig.get_path('scripts')
-
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 _TYCMD_VERSION = "0.9.9"
 
 log = getLogger(__name__)
+
+
+def identify(filename: Path | str) -> list[str]:
+    """
+    Identify models compatible with firmware.
+
+    Parameters
+    ----------
+    filename : Path | str
+        Path to the firmware file.
+
+    Returns
+    -------
+    list[str]
+        List of models compatible with firmware.
+    """
+    filename = str(_parse_firmware_file(filename))
+    return_string = _call_tycmd(args=["identify", filename, "--json", "-qqq"])
+    return_string = return_string.replace("\\", "\\\\")
+    output = json.loads(return_string)
+    if "error" in output:
+        raise RuntimeError(output["error"])
+    return output.get("models", [])
 
 
 def list_boards(verbose: bool = True) -> list[dict]:
@@ -86,6 +108,17 @@ def reset(
         return False
 
 
+def _parse_firmware_file(filename: str | Path) -> Path:
+    filepath = Path(filename).resolve()
+    if not filepath.exists():
+        raise FileNotFoundError(filepath)
+    if filepath.is_dir():
+        raise IsADirectoryError(filepath)
+    if len(ext := filepath.suffixes) == 0 or ext[-1] not in (".hex", ".elf", ".ehex"):
+        raise ValueError(f"Firmware '{filepath.name}' uses unrecognized extension")
+    return filepath
+
+
 def _call_tycmd(
     args: list[str],
     serial: str | None = None,
@@ -94,6 +127,7 @@ def _call_tycmd(
 ) -> str:
     tag = _assemble_tag(serial=serial, family=family, port=port)
     args = ["tycmd"] + args + tag
+    log.debug(" ".join(args))
     return check_output(args, text=True)
 
 
