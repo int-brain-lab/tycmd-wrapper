@@ -30,13 +30,15 @@ is-purelib = false
 [tool.pdm.dev-dependencies]
 dev = [
     "pdm-backend>=2.3.1",
-    "tycmd-wrapper[test, doc]",
+    "tycmd-wrapper[lint, test, doc]",
+]
+lint = [
+    "mypy>=1.10.1",
+    "ruff>=0.5.1",
 ]
 test = [
-    "mypy>=1.10.1",
     "pytest>=8.2.2",
     "pytest-cov>=5.0.0",
-    "ruff>=0.5.1",
 ]
 doc = [
     "sphinx>=7.3.7",
