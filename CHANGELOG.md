@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - dropped 'verbose' argument from list_boards()
+- dropped 'full' argument from version()
 
 ## [0.1.1] - 2024-07-11
 

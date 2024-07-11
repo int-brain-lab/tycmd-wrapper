@@ -49,27 +49,25 @@ def list_boards() -> list[dict]:
     return json.loads(return_string)
 
 
-def version(full: bool = False) -> str:
+def version() -> str:
     """
-    Return version information from tycmd.
-
-    Parameters
-    ----------
-    full : bool, optional
-        If True, return the full version string as returned by the tycmd binary. If
-        False, return only the version number. Default is False.
+    Return version information from tycmd binary.
 
     Returns
     -------
     str
         The version of tycmd.
+
+    Raises
+    ------
+    RuntimeError
+        If the version string could not be determined.
     """
     output = _call_tycmd(["--version"])
-    if full:
-        return output.strip()
+    match = re.search(r"\d+\.\d+\.\d+", output)
+    if match is None:
+        raise RuntimeError("Could not determine tycmd version")
     else:
-        if (match := re.search(r"\d+\.\d+\.\d+", output)) is None:
-            return ""
         return match.group()
 
 

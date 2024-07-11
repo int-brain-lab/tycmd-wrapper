@@ -5,7 +5,6 @@ from unittest.mock import patch
 import pytest
 
 import tycmd
-import re
 
 
 BLINK_HEX = Path(__file__).parent.joinpath("blink.hex").resolve()
@@ -48,12 +47,7 @@ def test_list_boards(mock_check_output):
 
 
 def test_version():
-    output = tycmd.version(full=True)
-    assert isinstance(output, str)
-    match = re.search(r"^.+(\d+\.\d+\.\d+)", output)
-    assert match is not None
-    assert match.groups()[0] == tycmd._TYCMD_VERSION
-    assert tycmd.version(full=False) == tycmd._TYCMD_VERSION
+    assert tycmd.version() == tycmd._TYCMD_VERSION
 
 
 def test__parse_firmware_file():
