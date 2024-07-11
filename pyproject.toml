@@ -6,11 +6,16 @@ authors = [
 ]
 requires-python = ">=3.10"
 readme = "README.md"
-repository = "https://github.com/int-brain-lab/tycmd-wrapper/"
-documentation = "https://int-brain-lab.github.io/tycmd-wrapper/"
 license = {text = "MIT"}
 keywords = ["tycmd", "teensy", "firmware"]
 dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/int-brain-lab/tycmd-wrapper/"
+Documentation = "https://int-brain-lab.github.io/tycmd-wrapper/"
+Repository = "https://github.com/int-brain-lab/tycmd-wrapper.git"
+Issues = "https://github.com/int-brain-lab/tycmd-wrapper/issues"
+Changelog = "https://github.com/int-brain-lab/tycmd-wrapper/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["pdm-backend"]
