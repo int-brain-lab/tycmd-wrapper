@@ -28,7 +28,7 @@ def identify(filename: Path | str) -> list[str]:
     """
     filename = str(_parse_firmware_file(filename))
     return_string = _call_tycmd(args=["identify", filename, "--json", "-qqq"])
-    return_string = return_string.replace("\\\\", "\\")
+    return_string = return_string.replace("\\", "\\\\")
     output = json.loads(return_string)
     if "error" in output:
         raise RuntimeError(output["error"])
