@@ -6,7 +6,7 @@ import json
 import re
 from logging import getLogger
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 _TYCMD_VERSION = "0.9.9"
 
 log = getLogger(__name__)
@@ -35,45 +35,39 @@ def identify(filename: Path | str) -> list[str]:
     return output.get("models", [])
 
 
-def list_boards(verbose: bool = True) -> list[dict]:
+def list_boards() -> list[dict]:
     """
     List available boards.
-
-    Parameters
-    ----------
-    verbose : bool, optional
-        If True, include detailed information about devices. Default is True.
 
     Returns
     -------
     list[dict]
         List of available devices.
     """
-    args = ["tycmd", "list", "-O", "json"] + (["-v"] if verbose else [])
-    return json.loads(check_output(args, text=True))
+    args = ["tycmd", "list", "-O", "json", "-v"]
+    return_string = check_output(args, text=True)
+    return json.loads(return_string)
 
 
-def version(full: bool = False) -> str:
+def version() -> str:
     """
-    Return version information from tycmd.
-
-    Parameters
-    ----------
-    full : bool, optional
-        If True, return the full version string as returned by the tycmd binary. If
-        False, return only the version number. Default is False.
+    Return version information from tycmd binary.
 
     Returns
     -------
     str
         The version of tycmd.
+
+    Raises
+    ------
+    RuntimeError
+        If the version string could not be determined.
     """
     output = _call_tycmd(["--version"])
-    if full:
-        return output.strip()
+    match = re.search(r"\d+\.\d+\.\d+", output)
+    if match is None:
+        raise RuntimeError("Could not determine tycmd version")
     else:
-        if (match := re.search(r"\d+\.\d+\.\d+", output)) is None:
-            return ""
         return match.group()
 
 
