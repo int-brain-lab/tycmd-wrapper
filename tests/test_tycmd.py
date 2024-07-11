@@ -48,6 +48,11 @@ def test_list_boards(mock_check_output):
 
 def test_version():
     assert tycmd.version() == tycmd._TYCMD_VERSION
+    with (
+        patch("tycmd.check_output", return_value="invalid") as _,
+        pytest.raises(RuntimeError),
+    ):
+        tycmd.version()
 
 
 def test__parse_firmware_file():
