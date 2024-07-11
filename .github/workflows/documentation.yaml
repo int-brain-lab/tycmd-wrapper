@@ -1,11 +1,11 @@
 name: Documentation
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
     paths:
-      - .github/workflows/documentation.yaml
       - docs/**
       - tycmd.py
 
