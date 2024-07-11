@@ -40,7 +40,7 @@ def test__parse_firmware_file():
             tycmd._parse_firmware_file(firmware_file)
         firmware_file = firmware_file.with_suffix(".hex")
         firmware_file.touch()
-        assert tycmd._parse_firmware_file(str(firmware_file)) == firmware_file
+        assert tycmd._parse_firmware_file(str(firmware_file)).samefile(firmware_file)
 
 
 def test__assemble_tag():
