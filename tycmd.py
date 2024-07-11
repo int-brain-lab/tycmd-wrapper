@@ -27,7 +27,9 @@ def identify(filename: Path | str) -> list[str]:
         List of models compatible with firmware.
     """
     filename = str(_parse_firmware_file(filename))
-    output = json.loads(_call_tycmd(args=["identify", filename, "--json", "-qqq"]))
+    return_string = _call_tycmd(args=["identify", filename, "--json", "-qqq"])
+    return_string.encode('unicode_escape')
+    output = json.loads(return_string)
     if "error" in output:
         raise RuntimeError(output["error"])
     return output.get("models", [])
