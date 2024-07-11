@@ -35,22 +35,18 @@ def identify(filename: Path | str) -> list[str]:
     return output.get("models", [])
 
 
-def list_boards(verbose: bool = True) -> list[dict]:
+def list_boards() -> list[dict]:
     """
     List available boards.
-
-    Parameters
-    ----------
-    verbose : bool, optional
-        If True, include detailed information about devices. Default is True.
 
     Returns
     -------
     list[dict]
         List of available devices.
     """
-    args = ["tycmd", "list", "-O", "json"] + (["-v"] if verbose else [])
-    return json.loads(check_output(args, text=True))
+    args = ["tycmd", "list", "-O", "json", "-v"]
+    return_string = check_output(args, text=True)
+    return json.loads(return_string)
 
 
 def version(full: bool = False) -> str:
