@@ -1,13 +1,15 @@
 """A python wrapper for tycmd."""
 
 from pathlib import Path
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, CalledProcessError, STDOUT, Popen, PIPE
 import json
 import re
 from logging import getLogger
+from shutil import which
 
 __version__ = "0.2.0"
 _TYCMD_VERSION = "0.9.9"
+_TYCMD_BINARY = which("tycmd")
 
 log = getLogger(__name__)
 
@@ -30,8 +32,9 @@ def upload(filename: Path | str, port: str | None = None, serial: str | None = N
     filename = str(_parse_firmware_file(filename))
     try:
         _call_tycmd(["upload", filename], port=port, serial=serial)
-    except RuntimeError:
+    except CalledProcessError as e:
         # TODO: implementation ...
+        # print(e.stdout)
         pass
 
 
@@ -143,9 +146,12 @@ def _call_tycmd(
     port: str | None = None,
 ) -> str:
     tag = _assemble_tag(serial=serial, family=family, port=port)
-    args = ["tycmd"] + args + tag
-    log.debug(" ".join(args))
-    return check_output(args, text=True)
+    args = [_TYCMD_BINARY] + args + tag
+    # log.debug(f"Starting subprocess: {' '.join(args)}")
+    # with Popen(args, stdout=PIPE, stderr=PIPE, bufsize=1, text=True) as proc:
+    #     for line in proc.stdout:
+    #         print(line, end='')
+    return check_output(args, text=True, stderr=STDOUT)
 
 
 def _assemble_tag(
