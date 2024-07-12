@@ -5,7 +5,6 @@ from subprocess import check_output, CalledProcessError, STDOUT
 import json
 import re
 from logging import getLogger
-from shutil import which
 
 __version__ = "0.2.0"
 _TYCMD_VERSION = "0.9.9"
