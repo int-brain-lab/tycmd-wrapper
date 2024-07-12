@@ -13,9 +13,23 @@ log = getLogger(__name__)
 
 
 def upload(filename: Path | str, port: str | None = None, serial: str | None = None):
+    """
+    Upload firmware to board.
+
+    Parameters
+    ----------
+    filename : Path | str
+        Path to the firmware file.
+
+    port : str, optional
+        Port of targeted board.
+
+    serial : str, optional
+        Serial number of targeted board.
+    """
     filename = str(_parse_firmware_file(filename))
     try:
-        _call_tycmd(['upload', filename], port=port, serial=serial)
+        _call_tycmd(["upload", filename], port=port, serial=serial)
     except RuntimeError:
         # TODO: implementation ...
         pass
@@ -89,10 +103,10 @@ def reset(
     Parameters
     ----------
     port : str, optional
-        Port of board to be reset.
+        Port of targeted board.
 
     serial : str, optional
-        Serial number of board to be reset.
+        Serial number of targeted board.
 
     bootloader : bool, optional
         Switch board to bootloader if True. Default is False.
