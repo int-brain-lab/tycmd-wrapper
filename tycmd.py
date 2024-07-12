@@ -144,7 +144,7 @@ def _call_tycmd(
     port: str | None = None,
 ) -> str:
     tag = _assemble_tag(serial=serial, family=family, port=port)
-    args = ['tycmd'] + args + tag
+    args = ["tycmd"] + args + tag
     # log.debug(f"Starting subprocess: {' '.join(args)}")
     # with Popen(args, stdout=PIPE, stderr=PIPE, bufsize=1, text=True) as proc:
     #     for line in proc.stdout:
