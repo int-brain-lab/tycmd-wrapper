@@ -6,7 +6,7 @@ import json
 import re
 from logging import getLogger
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 _TYCMD_VERSION = "0.9.9"
 
 log = getLogger(__name__)
@@ -72,18 +72,18 @@ def version() -> str:
 
 
 def reset(
-    serial: str | None = None, port: str | None = None, bootloader: bool = False
+    port: str | None = None, serial: str | None = None, bootloader: bool = False
 ) -> bool:
     """
     Reset board.
 
     Parameters
     ----------
-    serial : str, optional
-        Serial number of board to be reset.
-
     port : str, optional
         Port of board to be reset.
+
+    serial : str, optional
+        Serial number of board to be reset.
 
     bootloader : bool, optional
         Switch board to bootloader if True. Default is False.
@@ -126,7 +126,7 @@ def _call_tycmd(
 
 
 def _assemble_tag(
-    serial: str | None = None, family: str | None = None, port: str | None = None
+    port: str | None = None, serial: str | None = None, family: str | None = None
 ) -> list[str]:
     tag = "" if serial is None else str(serial)
     tag += "" if family is None else f"-{family}"
