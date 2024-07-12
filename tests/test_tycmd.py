@@ -7,7 +7,8 @@ import pytest
 import tycmd
 
 
-BLINK_HEX = Path(__file__).parent.joinpath("blink.hex").resolve()
+BLINK40_HEX = Path(__file__).parent.joinpath("blink40.hex").resolve()
+BLINK41_HEX = Path(__file__).parent.joinpath("blink41.hex").resolve()
 
 
 @pytest.fixture
@@ -22,7 +23,7 @@ def test_identify():
         firmware_file.touch()
         with pytest.raises(RuntimeError):
             tycmd.identify(firmware_file)
-    assert "Teensy 4.0" in tycmd.identify(BLINK_HEX)
+    assert "Teensy 4.0" in tycmd.identify(BLINK40_HEX)
 
 
 def test_list_boards(mock_check_output):
