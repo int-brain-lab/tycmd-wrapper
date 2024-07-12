@@ -1,7 +1,7 @@
 """A python wrapper for tycmd."""
 
 from pathlib import Path
-from subprocess import check_output, CalledProcessError, STDOUT, Popen, PIPE
+from subprocess import check_output, CalledProcessError, STDOUT
 import json
 import re
 from logging import getLogger
@@ -32,7 +32,7 @@ def upload(filename: Path | str, port: str | None = None, serial: str | None = N
     filename = str(_parse_firmware_file(filename))
     try:
         _call_tycmd(["upload", filename], port=port, serial=serial)
-    except CalledProcessError as e:
+    except CalledProcessError:
         # TODO: implementation ...
         # print(e.stdout)
         pass
