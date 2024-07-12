@@ -9,7 +9,6 @@ from shutil import which
 
 __version__ = "0.2.0"
 _TYCMD_VERSION = "0.9.9"
-_TYCMD_BINARY = which("tycmd")
 
 log = getLogger(__name__)
 
@@ -146,7 +145,7 @@ def _call_tycmd(
     port: str | None = None,
 ) -> str:
     tag = _assemble_tag(serial=serial, family=family, port=port)
-    args = [_TYCMD_BINARY] + args + tag
+    args = ['tycmd'] + args + tag
     # log.debug(f"Starting subprocess: {' '.join(args)}")
     # with Popen(args, stdout=PIPE, stderr=PIPE, bufsize=1, text=True) as proc:
     #     for line in proc.stdout:
