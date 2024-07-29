@@ -46,7 +46,7 @@ def upload(
         Set RTC if supported: 'local' (default), 'utc' or 'none'.
 
     quiet : bool, optional
-        Disable output to stdout. Defaults to False.
+        Disable output. Defaults to False.
     """
     filename = str(_parse_firmware_file(filename))
     args = ["upload"]
@@ -54,6 +54,8 @@ def upload(
         args.append("--nocheck")
     if not reset_board:
         args.append("--noreset")
+    if quiet:
+        args.append("--quiet")
     args.extend(["--rtc", rtc_mode, filename])
     _call_tycmd(args, port=port, serial=serial, stdout=DEVNULL if quiet else None)
 
@@ -142,10 +144,12 @@ def reset(
     """
     try:
         _call_tycmd(
-            ["reset"] + (["-b"] if bootloader else []), serial=serial, port=port
+            ["reset"] + (["--bootloader"] if bootloader else []),
+            serial=serial,
+            port=port,
         )
         return True
-    except CalledProcessError:
+    except ChildProcessError:
         return False
 
 

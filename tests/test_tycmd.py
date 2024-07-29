@@ -1,12 +1,11 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, CalledProcessError
 
 import pytest
 
 import tycmd
-
 
 BLINK40_HEX = Path(__file__).parent.joinpath("blink40.hex").resolve()
 BLINK41_HEX = Path(__file__).parent.joinpath("blink41.hex").resolve()
@@ -16,6 +15,15 @@ BLINK41_HEX = Path(__file__).parent.joinpath("blink41.hex").resolve()
 def mock_run():
     with patch("tycmd.run") as mock_run:
         yield mock_run
+
+
+def test_upload(mock_run):
+    mock_run.return_value = CompletedProcess([], 0)
+    tycmd.upload(BLINK40_HEX, check=False, reset_board=False, quiet=True)
+    mock_run.assert_called_once()
+    assert "--nocheck" in mock_run.call_args[0][0]
+    assert "--noreset" in mock_run.call_args[0][0]
+    assert "--quiet" in mock_run.call_args[0][0]
 
 
 def test_identify():
@@ -53,6 +61,17 @@ def test_version():
         pytest.raises(ChildProcessError),
     ):
         tycmd.version()
+
+
+def test_reset(mock_run):
+    mock_run.return_value = CompletedProcess([], 0)
+    output = tycmd.reset(bootloader=True)
+    mock_run.assert_called_once()
+    assert "--bootloader" in mock_run.call_args[0][0]
+    assert output is True
+    mock_run.side_effect = CalledProcessError(-1, [])
+    output = tycmd.reset()
+    assert output is False
 
 
 def test__parse_firmware_file():
