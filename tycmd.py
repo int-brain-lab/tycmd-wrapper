@@ -1,7 +1,7 @@
 """A python wrapper for tycmd."""
 
 from pathlib import Path
-from subprocess import CalledProcessError, PIPE, run
+from subprocess import CalledProcessError, PIPE, DEVNULL, run
 import json
 import re
 from logging import getLogger
@@ -20,6 +20,7 @@ def upload(
     check: bool = True,
     reset_board: bool = True,
     rtc_mode: Literal["local", "utc", "none"] = "local",
+    quiet: bool = False,
 ):
     """
     Upload firmware to board.
@@ -43,6 +44,9 @@ def upload(
 
     rtc_mode : str, optional
         Set RTC if supported: 'local' (default), 'utc' or 'none'.
+
+    quiet : bool, optional
+        Disable output to stdout. Defaults to False.
     """
     filename = str(_parse_firmware_file(filename))
     args = ["upload"]
@@ -51,7 +55,7 @@ def upload(
     if not reset_board:
         args.append("--noreset")
     args.extend(["--rtc", rtc_mode, filename])
-    _call_tycmd(args, port=port, serial=serial, stdout=None)
+    _call_tycmd(args, port=port, serial=serial, stdout=DEVNULL if quiet else None)
 
 
 def identify(filename: Path | str) -> list[str]:
