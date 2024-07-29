@@ -1,7 +1,7 @@
 """A python wrapper for tycmd."""
 
 from pathlib import Path
-from subprocess import CalledProcessError, PIPE, DEVNULL, run
+from subprocess import CalledProcessError, PIPE, DEVNULL, run, CompletedProcess
 import json
 import re
 from logging import getLogger
@@ -21,6 +21,7 @@ def upload(
     reset_board: bool = True,
     rtc_mode: Literal["local", "utc", "none"] = "local",
     quiet: bool = False,
+    output_to_log: bool = False,
 ):
     """
     Upload firmware to board.
@@ -47,6 +48,9 @@ def upload(
 
     quiet : bool, optional
         Disable output. Defaults to False.
+
+    output_to_log : bool, optional
+        Divert output from stdout to logger. Defaults to False.
     """
     filename = str(_parse_firmware_file(filename))
     args = ["upload"]
@@ -75,9 +79,9 @@ def identify(filename: Path | str) -> list[str]:
         List of models compatible with firmware.
     """
     filename = str(_parse_firmware_file(filename))
-    return_string = _call_tycmd(args=["identify", filename, "--json"])
-    return_string = return_string.replace("\\", "\\\\")
-    output = json.loads(return_string)
+    p = _call_tycmd(args=["identify", filename, "--json"])
+    stdout = p.stdout.replace("\\", "\\\\")
+    output = json.loads(stdout)
     if "error" in output:
         raise RuntimeError(output["error"])
     return output.get("models", [])
@@ -93,9 +97,8 @@ def list_boards() -> list[dict]:
         List of available devices.
     """
     args = ["list", "-O", "json", "-v"]
-    return_string = _call_tycmd(args)
-    # return_string = check_output(args, text=True)
-    return json.loads(return_string)
+    p = _call_tycmd(args)
+    return json.loads(p.stdout)
 
 
 def version() -> str:
@@ -112,8 +115,8 @@ def version() -> str:
     RuntimeError
         If the version string could not be determined.
     """
-    output = _call_tycmd(["--version"])
-    match = re.search(r"\d+\.\d+\.\d+", output)
+    p = _call_tycmd(["--version"])
+    match = re.search(r"\d+\.\d+\.\d+", p.stdout)
     if match is None:
         raise ChildProcessError("Could not determine tycmd version")
     else:
@@ -143,12 +146,12 @@ def reset(
         True if board was reset successfully, False otherwise.
     """
     try:
-        _call_tycmd(
+        p = _call_tycmd(
             ["reset"] + (["--bootloader"] if bootloader else []),
             serial=serial,
             port=port,
         )
-        return True
+        return p.returncode == 0
     except ChildProcessError:
         return False
 
@@ -171,7 +174,7 @@ def _call_tycmd(
     port: str | None = None,
     stdout: None | int | IO = PIPE,
     raise_on_stderr: bool = False,
-) -> str:
+) -> CompletedProcess:
     tag = _assemble_tag(serial=serial, family=family, port=port)
     args = ["tycmd"] + tag + args
     log.debug(f"Calling subprocess: {' '.join(args)}")
@@ -188,7 +191,8 @@ def _call_tycmd(
     if raise_on_stderr and isinstance(p.stderr, str):
         raise ChildProcessError(p.stderr.strip())
 
-    return p.stdout.strip() if isinstance(p.stdout, str) else ""
+    # return the completed process
+    return p
 
 
 def _assemble_tag(

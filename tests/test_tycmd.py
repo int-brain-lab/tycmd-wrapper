@@ -19,8 +19,12 @@ def mock_run():
 
 def test_upload(mock_run):
     mock_run.return_value = CompletedProcess([], 0)
-    tycmd.upload(BLINK40_HEX, check=False, reset_board=False, quiet=True)
+    tycmd.upload(BLINK40_HEX, check=True, reset_board=True, quiet=False)
     mock_run.assert_called_once()
+    assert "--nocheck" not in mock_run.call_args[0][0]
+    assert "--noreset" not in mock_run.call_args[0][0]
+    assert "--quiet" not in mock_run.call_args[0][0]
+    tycmd.upload(BLINK40_HEX, check=False, reset_board=False, quiet=True)
     assert "--nocheck" in mock_run.call_args[0][0]
     assert "--noreset" in mock_run.call_args[0][0]
     assert "--quiet" in mock_run.call_args[0][0]
@@ -88,6 +92,17 @@ def test__parse_firmware_file():
         firmware_file.touch()
         assert tycmd._parse_firmware_file(firmware_file).samefile(firmware_file)
         assert tycmd._parse_firmware_file(str(firmware_file)).samefile(firmware_file)
+
+
+def test__call_tycmd(mock_run):
+    mock_run.return_value = CompletedProcess([], 0, stderr="Oh no!")
+    tycmd._call_tycmd([], raise_on_stderr=False)
+    mock_run.return_value = CompletedProcess([], 0, stderr="Oh no!")
+    with pytest.raises(ChildProcessError):
+        tycmd._call_tycmd([], raise_on_stderr=True)
+    mock_run.side_effect = CalledProcessError(-1, [])
+    with pytest.raises(ChildProcessError):
+        tycmd._call_tycmd([])
 
 
 def test__assemble_tag():
