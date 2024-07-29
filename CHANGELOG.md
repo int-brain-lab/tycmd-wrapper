@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - moved 'port' kwarg ahead of 'serial'
+- raise ChildProcessError instead of RuntimeError
 
 ## [0.1.2] - 2024-07-11
 
