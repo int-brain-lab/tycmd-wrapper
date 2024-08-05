@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 __version__ = "0.2.0"
 _TYCMD_VERSION = "0.9.9"
-RE_STRIP = re.compile(r"(^\s*\w+@\w+-\w+\s+)|(\s+$)")  # sanitize status output
+RE_STRIP = re.compile(r"(^\s*\w+@\w+-\w+\s+)")  # remove board tag from status
 
 
 def upload(
@@ -66,7 +66,7 @@ def reset(
     serial: str | None = None,
     bootloader: bool = False,
     log_level: int = logging.WARNING,
-) -> bool:
+) -> None:
     """
     Reset board. Status messages are logged.
 
@@ -83,11 +83,6 @@ def reset(
 
     log_level : int, optional
         Logging level. Defaults to logging.WARNING.
-
-    Returns
-    -------
-    bool
-        True if board was reset successfully, False otherwise.
     """
     args = ["reset"]
     if bootloader:
@@ -176,14 +171,14 @@ def _call_tycmd(
     log.debug(f"Calling subprocess: {' '.join(args)}")
 
     # Call tycmd
-    with Popen(args, stdout=PIPE, stderr=PIPE, text=True) as p:
+    with Popen(args, stdout=PIPE, stderr=PIPE, text=True, bufsize=1) as p:
         if log_level > logging.NOTSET:
             stdout = ""
             for line in p.stdout:
-                line = re.sub(pattern=RE_STRIP, repl="", string=line, count=2)
+                line = re.sub(pattern=RE_STRIP, repl="", string=line, count=1).strip()
                 log.log(level=log_level, msg=line)
                 stdout += line
-            stderr = p.stderr.read().strip()
+            _, stderr = p.communicate()
         else:
             stdout, stderr = p.communicate()
 

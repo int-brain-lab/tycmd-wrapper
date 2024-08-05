@@ -1,7 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
-from subprocess import CompletedProcess, CalledProcessError
 
 import pytest
 
@@ -11,45 +10,41 @@ BLINK40_HEX = Path(__file__).parent.joinpath("blink40.hex").resolve()
 BLINK41_HEX = Path(__file__).parent.joinpath("blink41.hex").resolve()
 
 
-# @pytest.fixture
-# def mock_Popen():
-#     with patch("tycmd.Popen") as mock_Popen:
-#         yield mock_Popen
-#
-#
-# class MockPopen(object):
-#     def __init__(self):
-#         pass
-#
-#     def communicate(self, input=None):
-#         pass
-#
-#     @property
-#     def returncode(self):
-#         pass
-#
-#
-# def test_upload(mock_Popen):
-#     tycmd.upload(BLINK40_HEX, check=True, reset_board=True)
-#     mock_Popen.assert_called_once()
-#     assert "--nocheck" not in mock_Popen.call_args[0][0]
-#     assert "--noreset" not in mock_Popen.call_args[0][0]
-#     assert "--quiet" not in mock_Popen.call_args[0][0]
-#     tycmd.upload(BLINK40_HEX, check=False, reset_board=False)
-#     assert "--nocheck" in mock_Popen.call_args[0][0]
-#     assert "--noreset" in mock_Popen.call_args[0][0]
-#     assert "--quiet" in mock_Popen.call_args[0][0]
+@pytest.fixture
+def mock_Popen():
+    with patch("tycmd.Popen", autospec=True) as mock_Popen:
+        mock_proc = mock_Popen.return_value.__enter__.return_value
+        mock_proc.returncode = 0
+        mock_proc.stdout = ["status"]
+        mock_proc.communicate.return_value = ("\n".join(mock_proc.stdout), "")
+        yield mock_Popen
 
 
-# def test_reset(mock_run):
-#     mock_run.return_value = CompletedProcess([], 0)
-#     output = tycmd.reset(bootloader=True)
-#     mock_run.assert_called_once()
-#     assert "--bootloader" in mock_run.call_args[0][0]
-#     assert output is True
-#     mock_run.side_effect = CalledProcessError(-1, [])
-#     output = tycmd.reset()
-#     assert output is False
+def test_upload(mock_Popen):
+    tycmd.upload(BLINK40_HEX, check=True, reset_board=True)
+    assert "--nocheck" not in mock_Popen.call_args[0][0]
+    assert "--noreset" not in mock_Popen.call_args[0][0]
+    tycmd.upload(BLINK40_HEX, check=False, reset_board=False)
+    assert "--nocheck" in mock_Popen.call_args[0][0]
+    assert "--noreset" in mock_Popen.call_args[0][0]
+
+
+def test_reset(mock_Popen, caplog):
+    mock_proc = mock_Popen.return_value.__enter__.return_value
+
+    output = tycmd.reset(bootloader=True, log_level=0)
+    mock_Popen.assert_called_once()
+    assert "--bootloader" in mock_Popen.call_args[0][0]
+    assert len(caplog.records) == 0
+    assert output is None
+
+    tycmd.reset(log_level=30)
+    assert "--bootloader" not in mock_Popen.call_args[0][0]
+    assert "status" in caplog.text
+
+    mock_proc.returncode = 1
+    with pytest.raises(ChildProcessError):
+        tycmd.reset()
 
 
 def test_identify():
