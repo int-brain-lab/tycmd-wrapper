@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - upload() method for uploading firmware file
+- status messages will be sent to log
 
 ### Changed
 
