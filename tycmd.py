@@ -107,9 +107,9 @@ def identify(filename: Path | str) -> list[str]:
         List of models compatible with firmware.
     """
     filename = str(_parse_firmware_file(filename))
-    output = _call_tycmd(args=["identify", filename, "--json"], raise_on_stderr=True)
-    output = output.replace("\\", "\\\\")
-    output = json.loads(output)
+    json_str = _call_tycmd(args=["identify", filename, "--json"], raise_on_stderr=True)
+    json_str = json_str.replace("\\", "\\\\")
+    output = json.loads(json_str)
     return output.get("models", [])
 
 
@@ -174,6 +174,7 @@ def _call_tycmd(
     with Popen(args, stdout=PIPE, stderr=PIPE, text=True, bufsize=1) as p:
         if log_level > logging.NOTSET:
             stdout = ""
+            assert p.stdout is not None
             for line in p.stdout:
                 line = re.sub(
                     pattern=RE_STRIP_TAG, repl="", string=line, count=1
