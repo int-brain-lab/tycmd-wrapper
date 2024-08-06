@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - docs/**
-      - tycmd.py
+      - 'docs/**'
+      - 'tycmd.py'
 
 permissions:
   contents: write
