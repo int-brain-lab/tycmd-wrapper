@@ -1,14 +1,17 @@
-tycmd-wrapper
-=============
+.. include:: ../../README.md
+   :parser: myst_parser.sphinx_
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
+   :hidden:
 
    api
    dev_guide
+   changelog
 
 .. toctree::
-   :maxdepth: 1
+   :caption: Links
+   :hidden:
 
-   changelog
+   GitHub <https://github.com/int-brain-lab/tycmd-wrapper>
+   PyPI <https://pypi.org/project/tycmd-wrapper>
