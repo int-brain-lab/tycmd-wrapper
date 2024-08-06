@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 __version__ = "0.2.0"
 _TYCMD_VERSION = "0.9.9"
-RE_STRIP = re.compile(r"(^\s*\w+@\w+-\w+\s+)")  # remove board tag from status
+RE_STRIP_TAG = re.compile(r"(^\s*\w+@\w+-\w+\s+)")  # match board tag
 
 
 def upload(
@@ -175,12 +175,16 @@ def _call_tycmd(
         if log_level > logging.NOTSET:
             stdout = ""
             for line in p.stdout:
-                line = re.sub(pattern=RE_STRIP, repl="", string=line, count=1).strip()
+                line = re.sub(
+                    pattern=RE_STRIP_TAG, repl="", string=line, count=1
+                ).strip()
                 log.log(level=log_level, msg=line)
                 stdout += line
             _, stderr = p.communicate()
         else:
             stdout, stderr = p.communicate()
+            stdout = re.sub(pattern=RE_STRIP_TAG, repl="", string=stdout).strip()
+    stderr = re.sub(pattern=RE_STRIP_TAG, repl="", string=stderr).strip()
 
     # Raise non-zero exit codes as a RuntimeError
     if p.returncode != 0:
