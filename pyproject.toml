@@ -55,6 +55,9 @@ doc = [
 [tool.ruff]
 include = ["pyproject.toml", "tycmd.py", "tests/*.py"]
 
+[tool.ruff.format]
+quote-style = "single"
+
 [tool.ruff.lint]
 extend-select = ["D"]
 
