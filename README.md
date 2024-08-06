@@ -59,7 +59,7 @@ Details for the available boards will be returned as a list of python dictionari
 
 ### Uploading a firmware file
 
-To upload firmware to a board, use the `upload` function.
+To upload a firmware file to a board, use the `upload` function.
 You can address a board by its port or by its serial number.
 
 ```python

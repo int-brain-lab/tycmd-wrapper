@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - changed default log-level for reset() and upload() to INFO
+- added a few examples to README.md
 
 ## [0.2.0] - 2024-08-06
 
