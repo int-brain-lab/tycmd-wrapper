@@ -3,10 +3,6 @@
 A Python wrapper for [tycmd](https://koromix.dev/tytools) by [Niels 
 Martignène](https://github.com/Koromix/).
 
-> [!WARNING]
-> This package is not yet functional.
-> Syntax may change without warning.
-
 Documentation: https://int-brain-lab.github.io/tycmd-wrapper
 
 ![License](https://img.shields.io/github/license/int-brain-lab/tycmd-wrapper)
