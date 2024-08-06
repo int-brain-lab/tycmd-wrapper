@@ -11,7 +11,7 @@ Examples
 
 ### Identifying a firmware file
 
-To identify which models are compatible with a specific firmware file, use the identify function.
+To identify which models are compatible with a specific firmware file, use the `identify()` method.
 
 ```python
 import tycmd
@@ -24,7 +24,7 @@ Models compatible with the firmware file will be returned as a list of strings:
 ```
 
 ### List Available Boards
-To list all available boards, use the list_boards function.
+To list all available boards, use the `list_boards()` method.
 
 ```python
 import tycmd
@@ -59,8 +59,8 @@ Details for the available boards will be returned as a list of python dictionari
 
 ### Uploading a firmware file
 
-To upload a firmware file to a board, use the `upload` function.
-You can address a board by its port or by its serial number.
+To upload a firmware file to a board, use the `upload()` method.
+You can specify a board by its port or by its serial number.
 
 ```python
 import tycmd
