@@ -9,9 +9,9 @@ from typing import Literal
 
 log = logging.getLogger(__name__)
 
-__version__ = "0.2.0"
-_TYCMD_VERSION = "0.9.9"
-RE_STRIP_TAG = re.compile(r"(^\s*\w+@\w+-\w+\s+)")  # match board tag
+__version__ = '0.2.1'
+_TYCMD_VERSION = '0.9.9'
+RE_STRIP_TAG = re.compile(r'(^\s*\w+@\w+-\w+\s+)')  # match board tag
 
 
 def upload(
@@ -20,8 +20,8 @@ def upload(
     serial: str | None = None,
     check: bool = True,
     reset_board: bool = True,
-    rtc_mode: Literal["local", "utc", "none"] = "local",
-    log_level: int = logging.WARNING,
+    rtc_mode: Literal['local', 'utc', 'none'] = 'local',
+    log_level: int = logging.INFO,
 ):
     """
     Upload firmware to board. Status messages are logged.
@@ -47,17 +47,17 @@ def upload(
         Set RTC if supported: 'local' (default), 'utc' or 'none'.
 
     log_level : int, optional
-        Logging level. Defaults to logging.WARNING.
+        Log level. Defaults to INFO.
     """
     filename = str(_parse_firmware_file(filename))
-    args = ["upload"]
+    args = ['upload']
     if not check:
-        args.append("--nocheck")
+        args.append('--nocheck')
     if not reset_board:
-        args.append("--noreset")
+        args.append('--noreset')
     if log_level == logging.NOTSET:
-        args.append("--quiet")
-    args.extend(["--rtc", rtc_mode, filename])
+        args.append('--quiet')
+    args.extend(['--rtc', rtc_mode, filename])
     _call_tycmd(args, port=port, serial=serial, log_level=log_level)
 
 
@@ -65,7 +65,7 @@ def reset(
     port: str | None = None,
     serial: str | None = None,
     bootloader: bool = False,
-    log_level: int = logging.WARNING,
+    log_level: int = logging.INFO,
 ) -> None:
     """
     Reset board. Status messages are logged.
@@ -82,13 +82,13 @@ def reset(
         Switch board to bootloader if True. Default is False.
 
     log_level : int, optional
-        Logging level. Defaults to logging.WARNING.
+        Log level. Defaults to INFO.
     """
-    args = ["reset"]
+    args = ['reset']
     if bootloader:
-        args.append("--bootloader")
+        args.append('--bootloader')
     if log_level == logging.NOTSET:
-        args.append("--quiet")
+        args.append('--quiet')
     _call_tycmd(args, serial=serial, port=port, log_level=log_level)
 
 
@@ -107,10 +107,10 @@ def identify(filename: Path | str) -> list[str]:
         List of models compatible with firmware.
     """
     filename = str(_parse_firmware_file(filename))
-    json_str = _call_tycmd(args=["identify", filename, "--json"], raise_on_stderr=True)
-    json_str = json_str.replace("\\", "\\\\")
+    json_str = _call_tycmd(args=['identify', filename, '--json'], raise_on_stderr=True)
+    json_str = json_str.replace('\\', '\\\\')
     output = json.loads(json_str)
-    return output.get("models", [])
+    return output.get('models', [])
 
 
 def list_boards() -> list[dict]:
@@ -122,7 +122,7 @@ def list_boards() -> list[dict]:
     list[dict]
         List of available devices.
     """
-    output = _call_tycmd(["list", "-O", "json", "-v"])
+    output = _call_tycmd(['list', '-O', 'json', '-v'])
     return json.loads(output)
 
 
@@ -140,10 +140,10 @@ def version() -> str:
     RuntimeError
         If the version string could not be determined.
     """
-    output = _call_tycmd(["--version"])
-    match = re.search(r"\d+\.\d+\.\d+", output)
+    output = _call_tycmd(['--version'])
+    match = re.search(r'\d+\.\d+\.\d+', output)
     if match is None:
-        raise ChildProcessError("Could not determine tycmd version")
+        raise ChildProcessError('Could not determine tycmd version')
     else:
         return match.group()
 
@@ -154,7 +154,11 @@ def _parse_firmware_file(filename: str | Path) -> Path:
         raise FileNotFoundError(filepath)
     if filepath.is_dir():
         raise IsADirectoryError(filepath)
-    if len(ext := filepath.suffixes) == 0 or ext[-1] not in (".hex", ".elf", ".ehex"):
+    if len(ext := filepath.suffixes) == 0 or ext[-1].lower() not in (
+        '.hex',
+        '.elf',
+        '.ehex',
+    ):
         raise ValueError(f"Firmware '{filepath.name}' uses unrecognized extension")
     return filepath
 
@@ -173,19 +177,19 @@ def _call_tycmd(
     # Call tycmd
     with Popen(args, stdout=PIPE, stderr=PIPE, text=True, bufsize=1) as p:
         if log_level > logging.NOTSET:
-            stdout = ""
+            stdout = ''
             assert p.stdout is not None
             for line in p.stdout:
                 line = re.sub(
-                    pattern=RE_STRIP_TAG, repl="", string=line, count=1
+                    pattern=RE_STRIP_TAG, repl='', string=line, count=1
                 ).strip()
                 log.log(level=log_level, msg=line)
                 stdout += line
             _, stderr = p.communicate()
         else:
             stdout, stderr = p.communicate()
-            stdout = re.sub(pattern=RE_STRIP_TAG, repl="", string=stdout).strip()
-    stderr = re.sub(pattern=RE_STRIP_TAG, repl="", string=stderr).strip()
+            stdout = re.sub(pattern=RE_STRIP_TAG, repl='', string=stdout).strip()
+    stderr = re.sub(pattern=RE_STRIP_TAG, repl='', string=stderr).strip()
 
     # Raise non-zero exit codes as a RuntimeError
     if p.returncode != 0:
@@ -207,10 +211,10 @@ def _assemble_args(
     serial: str | None = None,
     family: str | None = None,
 ) -> list[str]:
-    output = ["tycmd", *args]
+    output = ['tycmd', *args]
     if any((port, serial, family)):
-        tag = "" if serial is None else str(serial)
-        tag += "" if family is None else f"-{family}"
-        tag += "" if port is None else f"@{port}"
-        output.extend(["-B", tag])
+        tag = '' if serial is None else str(serial)
+        tag += '' if family is None else f'-{family}'
+        tag += '' if port is None else f'@{port}'
+        output.extend(['-B', tag])
     return output
