@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tycmd-wrapper &mdash; tycmd-wrapper 0.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=37f418d5"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            tycmd-wrapper
+          </a>
+              <div class="version">
+                0.2.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev_guide.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/int-brain-lab/tycmd-wrapper">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/tycmd-wrapper">PyPI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">tycmd-wrapper</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">tycmd-wrapper</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tycmd-wrapper">
+<h1>tycmd-wrapper<a class="headerlink" href="#tycmd-wrapper" title="Link to this heading"></a></h1>
+<p>A Python wrapper for <a class="reference external" href="https://koromix.dev/tytools">tycmd</a> by
+<a class="reference external" href="https://github.com/Koromix/">Niels Martignène</a> - a tool for managing
+<a class="reference external" href="https://www.pjrc.com/teensy/">Teensy USB Development Boards</a> by PJRC.</p>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="identifying-a-firmware-file">
+<h3>Identifying a firmware file<a class="headerlink" href="#identifying-a-firmware-file" title="Link to this heading"></a></h3>
+<p>To identify which models are compatible with a specific firmware file, use the <code class="docutils literal notranslate"><span class="pre">identify()</span></code> method.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tycmd</span>
+<span class="n">compatible_models</span> <span class="o">=</span> <span class="n">tycmd</span><span class="o">.</span><span class="n">identify</span><span class="p">(</span><span class="s1">&#39;blink.hex&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Models compatible with the firmware file will be returned as a list of strings:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="s1">&#39;Teensy 4.0&#39;</span><span class="p">,</span> <span class="s1">&#39;Teensy 4.0 (beta 1)&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="list-available-boards">
+<h3>List Available Boards<a class="headerlink" href="#list-available-boards" title="Link to this heading"></a></h3>
+<p>To list all available boards, use the <code class="docutils literal notranslate"><span class="pre">list_boards()</span></code> method.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tycmd</span>
+<span class="n">boards</span> <span class="o">=</span> <span class="n">list_boards</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Details for the available boards will be returned as a list of python dictionaries.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="s1">&#39;add&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;tag&#39;</span><span class="p">:</span> <span class="s1">&#39;3576040-Teensy&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;serial&#39;</span><span class="p">:</span> <span class="s1">&#39;3576040&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;USB Serial&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;model&#39;</span><span class="p">:</span> <span class="s1">&#39;Teensy 3.1&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="s1">&#39;usb-1-4&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;capabilities&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;unique&#39;</span><span class="p">,</span> <span class="s1">&#39;run&#39;</span><span class="p">,</span> <span class="s1">&#39;reboot&#39;</span><span class="p">,</span> <span class="s1">&#39;serial&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;interfaces&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s1">&#39;Serial&#39;</span><span class="p">,</span> <span class="s1">&#39;/dev/ttyACM1&#39;</span><span class="p">]],</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="s1">&#39;add&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;tag&#39;</span><span class="p">:</span> <span class="s1">&#39;14014980-Teensy&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;serial&#39;</span><span class="p">:</span> <span class="s1">&#39;14014980&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;USB Serial&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;model&#39;</span><span class="p">:</span> <span class="s1">&#39;Teensy 4.0&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="s1">&#39;usb-1-3&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;capabilities&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;unique&#39;</span><span class="p">,</span> <span class="s1">&#39;run&#39;</span><span class="p">,</span> <span class="s1">&#39;rtc&#39;</span><span class="p">,</span> <span class="s1">&#39;reboot&#39;</span><span class="p">,</span> <span class="s1">&#39;serial&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;interfaces&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s1">&#39;Serial&#39;</span><span class="p">,</span> <span class="s1">&#39;/dev/ttyACM0&#39;</span><span class="p">]],</span>
+    <span class="p">},</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="uploading-a-firmware-file">
+<h3>Uploading a firmware file<a class="headerlink" href="#uploading-a-firmware-file" title="Link to this heading"></a></h3>
+<p>To upload a firmware file to a board, use the <code class="docutils literal notranslate"><span class="pre">upload()</span></code> method.
+You can specify a board by its port or by its serial number.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tycmd</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="n">tycmd</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="s1">&#39;blink.hex&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="s1">&#39;/dev/ttyACM0&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The upload progress will be logged:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">INFO</span><span class="p">:</span><span class="n">tycmd</span><span class="p">:</span><span class="n">Uploading</span> <span class="n">to</span> <span class="n">board</span> <span class="s1">&#39;14014980-Teensy&#39;</span> <span class="p">(</span><span class="n">Teensy</span> <span class="mf">4.0</span><span class="p">)</span>
+<span class="n">INFO</span><span class="p">:</span><span class="n">tycmd</span><span class="p">:</span><span class="n">Triggering</span> <span class="n">board</span> <span class="n">reboot</span>
+<span class="n">INFO</span><span class="p">:</span><span class="n">tycmd</span><span class="p">:</span><span class="n">Firmware</span><span class="p">:</span> <span class="n">blink40</span><span class="o">.</span><span class="n">hex</span>
+<span class="n">INFO</span><span class="p">:</span><span class="n">tycmd</span><span class="p">:</span><span class="n">Flash</span> <span class="n">usage</span><span class="p">:</span> <span class="mi">19</span> <span class="n">kiB</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">INFO</span><span class="p">:</span><span class="n">tycmd</span><span class="p">:</span><span class="n">Uploading</span><span class="o">...</span>
+<span class="n">INFO</span><span class="p">:</span><span class="n">tycmd</span><span class="p">:</span><span class="n">Sending</span> <span class="n">reset</span> <span class="n">command</span> <span class="p">(</span><span class="k">with</span> <span class="n">RTC</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="full-documentation">
+<h2>Full Documentation<a class="headerlink" href="#full-documentation" title="Link to this heading"></a></h2>
+<p>The full API documentation is available <a class="reference external" href="https://int-brain-lab.github.io/tycmd-wrapper">here</a>.</p>
+<p><img alt="License" src="https://img.shields.io/github/license/int-brain-lab/tycmd-wrapper" />
+<a class="reference external" href="https://coveralls.io/github/int-brain-lab/tycmd-wrapper"><img alt="Coverage" src="https://img.shields.io/coverallsCoverage/github/int-brain-lab/tycmd-wrapper" /></a>
+<a class="reference external" href="https://github.com/int-brain-lab/tycmd-wrapper/actions"><img alt="CI" src="https://github.com/int-brain-lab/tycmd-wrapper/actions/workflows/testing.yaml/badge.svg" /></a>
+<a class="reference external" href="https://pypi.org/project/tycmd-wrapper/"><img alt="PyPI" src="https://img.shields.io/pypi/v/tycmd-wrapper" /></a></p>
+</section>
+</section>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, International Brain Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
