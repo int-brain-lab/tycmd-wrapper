@@ -172,7 +172,7 @@ def _call_tycmd(
     log_level: int = logging.NOTSET,
 ) -> str:
     args = _assemble_args(args, serial=serial, family=family, port=port)
-    log.debug(f"Calling subprocess: {' '.join(args)}")
+    log.debug(f'Calling subprocess: {" ".join(args)}')
 
     # Call tycmd
     with Popen(args, stdout=PIPE, stderr=PIPE, text=True, bufsize=1) as p:
