@@ -30,10 +30,14 @@ is-purelib = false
 
 [dependency-groups]
 dev = [
-  { include-group = "doc" },
-  { include-group = "lint" },
-  { include-group = "test" },
-  { include-group = "typing" },
+    { include-group = "build" },
+    { include-group = "doc" },
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "typing" },
+]
+build = [
+    "pdm-backend",
 ]
 lint = [
     "ruff>=0.15.0",

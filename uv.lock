@@ -716,6 +716,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pdm-backend"
+version = "2.4.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/38/d22c1050130b8cdf16fef76c99c59968086802744947f2813d45c69cca52/pdm_backend-2.4.7.tar.gz", hash = "sha256:a509d083850378ce919d41e7a2faddfc57a1764d376913c66731125d6b14110f", size = 118975, upload-time = "2026-01-29T10:52:13.85Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/88/b390b6a78e77f6ab8a232265ba8fbad78b360b3224c893afbc10c7b1289f/pdm_backend-2.4.7-py3-none-any.whl", hash = "sha256:1599e3afa6f229b30cb4d3bd9caeca42229c42eb5730abd13e0b5256ec93c9f7", size = 115514, upload-time = "2026-01-29T10:52:12.52Z" },
+]
+
+[[package]]
 name = "pluggy"
 version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1180,10 +1189,14 @@ version = "0.2.1"
 source = { editable = "." }
 
 [package.dev-dependencies]
+build = [
+    { name = "pdm-backend" },
+]
 dev = [
     { name = "mypy" },
     { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "myst-parser", version = "5.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pdm-backend" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
@@ -1218,9 +1231,11 @@ typing = [
 [package.metadata]
 
 [package.metadata.requires-dev]
+build = [{ name = "pdm-backend" }]
 dev = [
     { name = "mypy", specifier = ">=1.10.1" },
     { name = "myst-parser", specifier = ">=3.0.1" },
+    { name = "pdm-backend" },
     { name = "pytest", specifier = ">=8.2.2" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
     { name = "ruff", specifier = ">=0.15.0" },
