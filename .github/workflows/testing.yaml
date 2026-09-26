@@ -9,8 +9,8 @@ on:
       - '**/*.md'
 
 jobs:
-  Ruff:
-    name: Ruff
+  Quality:
+    name: "ruff & mypy"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -19,9 +19,27 @@ jobs:
           version-file: uv.lock
       - run: ruff check
       - run: ruff format --check
+      - name: Install libudev
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      # uv sync (and uv run) always need tycmd-wrapper's own metadata, which our custom
+      # pdm-backend hook builds tycmd to obtain — same cache key as Testing's ubuntu-latest
+      # entry below, so whichever job runs first warms it for the other.
+      - name: Cache tycmd binary
+        uses: actions/cache@v4
+        with:
+          path: bin
+          key: tycmd-ubuntu-latest-${{ hashFiles('tycmd.py') }}
+      - name: Ensure tycmd binary (builds from source if not cached)
+        run: python3 pdm_build.py
+      - name: Sync dependencies
+        run: uv sync --no-default-groups --group tox
+      - run: uv run tox -m 'typing' --fail-fast -p --parallel-no-spinner
 
-  BuildTycmd:
-    name: Build tycmd (${{ matrix.os }})
+  Testing:
+    needs: [Quality]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -34,6 +52,7 @@ jobs:
       - name: Set up MSVC (Windows)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
+      - uses: astral-sh/setup-uv@v7
       - name: Cache tycmd binary
         uses: actions/cache@v4
         with:
@@ -41,51 +60,26 @@ jobs:
           key: tycmd-${{ matrix.os }}-${{ hashFiles('tycmd.py') }}
       - name: Ensure tycmd binary (builds from source if not cached)
         run: python3 pdm_build.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tycmd-${{ matrix.os }}
-          path: bin
-          retention-days: 1
-
-  Testing:
-    needs: [Ruff, BuildTycmd]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v7
-      - name: Download tycmd binary
-        uses: actions/download-artifact@v4
-        with:
-          name: tycmd-${{ matrix.os }}
-          path: bin
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: uv sync --group test --group typing
-      - name: Run mypy
-        run: uv run mypy --python-version ${{ matrix.python-version }}
-      - name: Run Tests
-        run: uv run -v pytest tests
-      - name: coveralls.io
-        uses: coverallsapp/github-action@v2
-        with:
-          flag-name: ${{ matrix.python-version }}, ${{ matrix.os }}
-          parallel: true
-          file: coverage.xml
-          compare-ref: iblrigv8
+      - name: Sync dependencies
+        run: uv sync --no-default-groups --group tox --group ci
+      - name: Build wheel
+        run: uv build --wheel
+      - name: Run tox
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # --installpkg: build the wheel once above (with tycmd already baked in) and have
+        # every tox env just `uv pip install` that same wheel, instead of each of the 4
+        # Python-version envs independently re-invoking our pdm-backend hook (redundant at
+        # best; a real race if they ever ran before bin/tycmd existed).
+        run: uv run tox --skip-env 'linting|formatting|typing' --installpkg dist/*.whl --fail-fast -p --parallel-no-spinner -- -ci
 
   Finish:
-    needs: [Testing]
+    needs: Testing
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@v2
-      with:
-        parallel-finished: true
+      - uses: coverallsapp/github-action@v2
+        continue-on-error: true
+        with:
+          parallel-finished: true

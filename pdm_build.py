@@ -9,10 +9,7 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    # Only needed for the type annotation below. pdm-backend is a build-time-only
-    # dependency and isn't installed when this file is run directly as a plain script
-    # (e.g. `python3 pdm_build.py` in CI, to build just the binary without a full wheel).
-    from pdm.backend.hooks import Context
+    from pdm.backend.hooks import Context  # Only needed for the type annotation
 
 REPO_URL = 'https://github.com/Koromix/rygel'
 
