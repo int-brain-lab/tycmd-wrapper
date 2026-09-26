@@ -10,39 +10,66 @@ on:
 
 jobs:
   Ruff:
-    name: Ruff & mypy
+    name: Ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: chartboost/ruff-action@v1
-        name: ruff check
+      - uses: actions/checkout@v7
+      - uses: astral-sh/ruff-action@v4.1.0
         with:
-          args: 'check --output-format=github'
-      - uses: chartboost/ruff-action@v1
-        name: ruff format
-        with:
-          args: 'format --check'
-      - name: mypy
-        run: |
-          pip install mypy
-          mypy
+          version-file: uv.lock
+      - run: ruff check
+      - run: ruff format --check
 
-  Testing:
-    needs: [Ruff]
+  BuildTycmd:
+    name: Build tycmd (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
-        os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - name: Install libudev (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Cache tycmd binary
+        uses: actions/cache@v4
+        with:
+          path: bin
+          key: tycmd-${{ matrix.os }}-${{ hashFiles('tycmd.py') }}
+      - name: Ensure tycmd binary (builds from source if not cached)
+        run: python3 pdm_build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tycmd-${{ matrix.os }}
+          path: bin
+          retention-days: 1
+
+  Testing:
+    needs: [Ruff, BuildTycmd]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download tycmd binary
+        uses: actions/download-artifact@v4
+        with:
+          name: tycmd-${{ matrix.os }}
+          path: bin
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync --group test
+        run: uv sync --group test --group typing
+      - name: Run mypy
+        run: uv run mypy --python-version ${{ matrix.python-version }}
       - name: Run Tests
         run: uv run -v pytest tests
       - name: coveralls.io
