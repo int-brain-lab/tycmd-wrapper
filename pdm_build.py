@@ -68,12 +68,17 @@ def build_tycmd(output_dir: Path) -> Path:
             bootstrap = src / ('bootstrap.bat' if is_windows else 'bootstrap.sh')
             felix = src / ('felix.exe' if is_windows else 'felix')
             subprocess.check_call([str(bootstrap)], cwd=src, shell=is_windows)
-            subprocess.check_call([str(felix), '-pFast', '-O', str(output_dir), 'tycmd'], cwd=src)
-            binary = next(output_dir.glob('tycmd*')).resolve()
+            subprocess.check_call([str(felix), '-pFast', 'tycmd'], cwd=src)
+            built = next((src / 'bin' / 'Fast').glob('tycmd*'))
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f'Could not build tycmd {version}') from e
         except StopIteration as e:
-            raise RuntimeError(f'Cannot find built tycmd binary in {output_dir}') from e
+            raise RuntimeError(f'Cannot find built tycmd binary in {src / "bin" / "Fast"}') from e
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        binary = Path(shutil.copy2(built, output_dir / built.name))
+        if not is_windows:
+            binary.chmod(0o755)
 
     # check & return binary
     _check_version(binary, version)
