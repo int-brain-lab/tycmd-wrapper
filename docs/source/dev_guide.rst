@@ -1,11 +1,11 @@
 Developer Guide
 ===============
 
-PDM
----
+uv
+--
 
-This project is utilizing `PDM <https://pdm-project.org/>`_ as its package manager for managing dependencies and ensuring consistent and reproducible environments.
-See `PDM's documentation <https://pdm-project.org/en/latest/#recommended-installation-method>`_ for details on installing PDM.
+This project is utilizing `uv <https://docs.astral.sh/uv/>`_ as its package manager for managing dependencies and ensuring consistent and reproducible environments.
+See `uv's documentation <https://docs.astral.sh/uv/getting-started/installation/>`_ for details on installing uv.
 
 
 Installing developer dependencies
@@ -13,7 +13,7 @@ Installing developer dependencies
 
 .. code-block:: bash
 
-   pdm sync -d
+   uv sync --group dev
 
 
 Running the unit-tests
@@ -21,7 +21,7 @@ Running the unit-tests
 
 .. code-block:: bash
 
-   pdm run pytest
+   uv run pytest
 
 
 Coverage report
@@ -29,7 +29,7 @@ Coverage report
 
 .. code-block:: bash
 
-   pdm run coverage report
+   uv run coverage report
 
 
 Checking and formatting of code
@@ -37,9 +37,9 @@ Checking and formatting of code
 
 .. code-block:: bash
 
-   pdm run ruff format
-   pdm run ruff check --fix
-   pdm run mypy
+   uv run ruff format
+   uv run ruff check --fix
+   uv run mypy
 
 
 Building the documentation
@@ -47,7 +47,7 @@ Building the documentation
 
 .. code-block:: bash
 
-   pdm run sphinx-build ./docs/source ./docs/build
+   uv run sphinx-build ./docs/source ./docs/build
 
 
 Building the package
@@ -55,4 +55,4 @@ Building the package
 
 .. code-block:: bash
 
-   pdm build
+   uv build

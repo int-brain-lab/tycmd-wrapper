@@ -36,15 +36,15 @@ jobs:
         os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
         with:
-          cache: true
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pdm sync -dG test
+        run: uv sync --group test
       - name: Run Tests
-        run: pdm run -v pytest tests
+        run: uv run -v pytest tests
       - name: coveralls.io
         uses: coverallsapp/github-action@v2
         with:
