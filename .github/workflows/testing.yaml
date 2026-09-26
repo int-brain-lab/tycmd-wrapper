@@ -19,8 +19,6 @@ jobs:
           version-file: uv.lock
       - run: ruff check
       - run: ruff format --check
-      - name: Install libudev
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
@@ -28,10 +26,14 @@ jobs:
       # pdm-backend hook builds tycmd to obtain — same cache key as Testing's ubuntu-latest
       # entry below, so whichever job runs first warms it for the other.
       - name: Cache tycmd binary
+        id: cache-tycmd
         uses: actions/cache@v4
         with:
           path: bin
           key: tycmd-ubuntu-latest-${{ hashFiles('tycmd.py') }}
+      - name: Install libudev
+        if: steps.cache-tycmd.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev
       - name: Ensure tycmd binary (builds from source if not cached)
         run: python3 pdm_build.py
       - name: Sync dependencies
@@ -46,18 +48,19 @@ jobs:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v7
-      - name: Install libudev (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
-      - name: Set up MSVC (Windows)
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
       - uses: astral-sh/setup-uv@v7
       - name: Cache tycmd binary
+        id: cache-tycmd
         uses: actions/cache@v4
         with:
           path: bin
           key: tycmd-${{ matrix.os }}-${{ hashFiles('tycmd.py') }}
+      - name: Install libudev (Linux)
+        if: runner.os == 'Linux' && steps.cache-tycmd.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows' && steps.cache-tycmd.outputs.cache-hit != 'true'
+        uses: ilammy/msvc-dev-cmd@v1
       - name: Ensure tycmd binary (builds from source if not cached)
         run: python3 pdm_build.py
       - name: Sync dependencies
