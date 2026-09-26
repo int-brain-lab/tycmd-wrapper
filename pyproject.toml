@@ -32,14 +32,22 @@ excludes = [".gitignore", "docs/build"]
 run-setuptools = false
 is-purelib = false
 
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 dev = [
-    "pdm-backend>=2.3.1",
-    "tycmd-wrapper[lint, test, doc]",
+    { include-group = "build" },
+    { include-group = "doc" },
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "typing" },
+]
+build = [
+    "pdm-backend",
 ]
 lint = [
+    "ruff>=0.15.0",
+]
+typing = [
     "mypy>=1.10.1",
-    "ruff>=0.5.1",
 ]
 test = [
     "pytest>=8.2.2",

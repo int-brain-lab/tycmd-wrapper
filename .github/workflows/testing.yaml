@@ -10,41 +10,36 @@ on:
 
 jobs:
   Ruff:
-    name: Ruff & mypy
+    name: Ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: chartboost/ruff-action@v1
-        name: ruff check
+      - uses: actions/checkout@v7
+      - uses: astral-sh/ruff-action@v4.1.0
         with:
-          args: 'check --output-format=github'
-      - uses: chartboost/ruff-action@v1
-        name: ruff format
-        with:
-          args: 'format --check'
-      - name: mypy
-        run: |
-          pip install mypy
-          mypy
+          version-file: uv.lock
+      - run: ruff check
+      - run: ruff format --check
 
   Testing:
     needs: [Ruff]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
-        os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
+      - uses: actions/checkout@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
         with:
-          cache: true
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pdm sync -dG test
+        run: uv sync --group test --group typing
+      - name: Run mypy
+        run: uv run mypy --python-version ${{ matrix.python-version }}
       - name: Run Tests
-        run: pdm run -v pytest tests
+        run: uv run -v pytest tests
       - name: coveralls.io
         uses: coverallsapp/github-action@v2
         with:

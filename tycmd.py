@@ -1,10 +1,10 @@
 """A python wrapper for tycmd."""
 
-from pathlib import Path
-from subprocess import PIPE, Popen, CalledProcessError
 import json
-import re
 import logging
+import re
+from pathlib import Path
+from subprocess import PIPE, CalledProcessError, Popen
 from typing import Literal
 
 log = logging.getLogger(__name__)
@@ -172,7 +172,7 @@ def _call_tycmd(
     log_level: int = logging.NOTSET,
 ) -> str:
     args = _assemble_args(args, serial=serial, family=family, port=port)
-    log.debug(f"Calling subprocess: {' '.join(args)}")
+    log.debug(f'Calling subprocess: {" ".join(args)}')
 
     # Call tycmd
     with Popen(args, stdout=PIPE, stderr=PIPE, text=True, bufsize=1) as p:
