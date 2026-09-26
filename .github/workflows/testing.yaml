@@ -22,9 +22,6 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      # uv sync (and uv run) always need tycmd-wrapper's own metadata, which our custom
-      # pdm-backend hook builds tycmd to obtain — same cache key as Testing's ubuntu-latest
-      # entry below, so whichever job runs first warms it for the other.
       - name: Cache tycmd binary
         id: cache-tycmd
         uses: actions/cache@v4
@@ -71,10 +68,7 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # --installpkg: build the wheel once above (with tycmd already baked in) and have
-        # every tox env just `uv pip install` that same wheel, instead of each of the 4
-        # Python-version envs independently re-invoking our pdm-backend hook (redundant at
-        # best; a real race if they ever ran before bin/tycmd existed).
+          TOX_OS: ${{ matrix.os }}
         run: uv run tox --skip-env 'linting|formatting|typing' --installpkg dist/*.whl --fail-fast -p --parallel-no-spinner -- -ci
 
   Finish:
