@@ -90,6 +90,8 @@ def _ensure_tycmd(output_dir: Path) -> Path:
     version = _tycmd_version()
     existing = next(output_dir.glob('tycmd*'), None)
     if existing is not None:
+        if system() != 'Windows':
+            existing.chmod(0o755)
         try:
             _check_version(existing, version)
             return existing
