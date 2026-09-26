@@ -1,10 +1,10 @@
 """A python wrapper for tycmd."""
 
-from pathlib import Path
-from subprocess import PIPE, Popen, CalledProcessError
 import json
-import re
 import logging
+import re
+from pathlib import Path
+from subprocess import PIPE, CalledProcessError, Popen
 from typing import Literal
 
 log = logging.getLogger(__name__)

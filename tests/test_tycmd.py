@@ -16,9 +16,9 @@ def mock_Popen():
     with patch('tycmd.Popen', autospec=True) as mock_Popen:
         context = mock_Popen.return_value.__enter__.return_value
 
-        def set_pipes(stdout: list[str] = [], stderr: list[str] = []):
-            context.stdout = stdout
-            context.stderr = stderr
+        def set_pipes(stdout: list[str] | None = None, stderr: list[str] | None = None):
+            context.stdout = stdout if stdout is not None else []
+            context.stderr = stderr if stderr is not None else []
             context.communicate.return_value = (
                 '\n'.join(context.stdout),
                 '\n'.join(context.stderr),
@@ -44,7 +44,7 @@ def test_upload(mock_Popen, caplog):
     assert '--rtc' in mock_Popen.call_args[0][0]
     assert '--quiet' not in mock_Popen.call_args[0][0]
     assert len(caplog.records) > 0
-    assert all([x.levelname == 'INFO' for x in caplog.records])
+    assert all(x.levelname == 'INFO' for x in caplog.records)
 
     caplog.clear()
     tycmd.upload(BLINK40_HEX, check=False, reset_board=False, log_level=logging.NOTSET)
@@ -66,7 +66,7 @@ def test_reset(mock_Popen, caplog):
     tycmd.reset()
     assert '--bootloader' not in mock_Popen.call_args[0][0]
     assert len(caplog.records) > 0
-    assert all([x.levelname == 'INFO' for x in caplog.records])
+    assert all(x.levelname == 'INFO' for x in caplog.records)
 
     mock_Popen.set_returncode(1)
     with pytest.raises(ChildProcessError):

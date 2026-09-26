@@ -13,15 +13,10 @@ jobs:
     name: Ruff & mypy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: chartboost/ruff-action@v1
-        name: ruff check
-        with:
-          args: 'check --output-format=github'
-      - uses: chartboost/ruff-action@v1
-        name: ruff format
-        with:
-          args: 'format --check'
+      - uses: actions/checkout@v7
+      - uses: astral-sh/ruff-action@v4.1.0
+      - run: ruff check
+      - run: ruff format --check
       - name: mypy
         run: |
           pip install mypy
@@ -35,7 +30,7 @@ jobs:
         python-version: ['3.10', '3.11', '3.12']
         os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up uv
         uses: astral-sh/setup-uv@v10
         with:
