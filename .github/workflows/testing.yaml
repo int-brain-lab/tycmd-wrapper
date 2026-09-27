@@ -25,6 +25,8 @@ jobs:
       - uses: ./.github/actions/ensure-tycmd
         with:
           cache-key-os: ubuntu-latest
+          manylinux-image: quay.io/pypa/manylinux_2_28_x86_64
+          build-in-container: 'true'
       - name: Sync dependencies
         run: uv sync --no-default-groups --group tox
       - run: uv run tox -m 'typing' --fail-fast -p --parallel-no-spinner
@@ -34,13 +36,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            manylinux-image: quay.io/pypa/manylinux_2_28_x86_64
+          - os: ubuntu-24.04-arm
+            manylinux-image: quay.io/pypa/manylinux_2_28_aarch64
+          - os: macos-15-intel
+          - os: macos-latest
+          - os: windows-latest
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
       - uses: ./.github/actions/ensure-tycmd
         with:
           cache-key-os: ${{ matrix.os }}
+          manylinux-image: ${{ matrix.manylinux-image }}
+          build-in-container: ${{ matrix.manylinux-image != '' }}
       - name: Sync dependencies
         run: uv sync --no-default-groups --group tox --group ci
       - name: Build wheel

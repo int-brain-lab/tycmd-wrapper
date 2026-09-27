@@ -9,20 +9,28 @@ jobs:
   build:
     name: Build release packages
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest, macos-15-intel]
+        include:
+          - os: ubuntu-latest
+            container: quay.io/pypa/manylinux_2_28_x86_64
+          - os: ubuntu-24.04-arm
+            container: quay.io/pypa/manylinux_2_28_aarch64
+          - os: windows-latest
+          - os: macos-latest
+          - os: macos-15-intel
     steps:
       - uses: actions/checkout@v7
-      - name: Install libudev (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
-      - name: Set up MSVC (Windows)
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
       - uses: astral-sh/setup-uv@v7
+      - uses: ./.github/actions/ensure-tycmd
+        with:
+          cache-key-os: ${{ matrix.os }}
+          manylinux-image: ${{ matrix.container }}
       - name: Build distribution packages
-        run: uv build
+        run: |
+          uv build --sdist
+          uv build --wheel
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}
