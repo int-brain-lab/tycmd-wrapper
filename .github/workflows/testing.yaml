@@ -33,6 +33,7 @@ jobs:
       - run: uv run tox -m 'typing' --fail-fast -p --parallel-no-spinner
 
   Testing:
+    name: Testing (${{ matrix.os }})
     needs: [Quality]
     runs-on: ${{ matrix.os }}
     strategy:
