@@ -1,0 +1,182 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Developer Guide &mdash; tycmd-wrapper 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=454108cb"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="Changelog" href="../changelog/" />
+    <link rel="prev" title="API Reference" href="../api/" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../" class="icon icon-home">
+            tycmd-wrapper
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search/" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../api/">API Reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Developer Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#uv">uv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-developer-dependencies">Installing developer dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-tycmd">Building tycmd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-test-suite">Running the test suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coverage-report">Coverage report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checking-and-formatting-code">Checking and formatting code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-the-documentation">Building the documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-the-package">Building the package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog/">Changelog</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/int-brain-lab/tycmd-wrapper">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/tycmd-wrapper">PyPI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../">tycmd-wrapper</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Developer Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/dev_guide.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="developer-guide">
+<h1>Developer Guide<a class="headerlink" href="#developer-guide" title="Link to this heading"></a></h1>
+<section id="uv">
+<h2>uv<a class="headerlink" href="#uv" title="Link to this heading"></a></h2>
+<p>This project uses <a class="reference external" href="https://docs.astral.sh/uv/">uv</a> as its package manager, for managing
+dependencies and ensuring consistent, reproducible environments. See uv’s
+<a class="reference external" href="https://docs.astral.sh/uv/getting-started/installation/">installation instructions</a> for
+details on installing it.</p>
+</section>
+<section id="installing-developer-dependencies">
+<h2>Installing developer dependencies<a class="headerlink" href="#installing-developer-dependencies" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>dev
+</pre></div>
+</div>
+</section>
+<section id="building-tycmd">
+<h2>Building tycmd<a class="headerlink" href="#building-tycmd" title="Link to this heading"></a></h2>
+<p>The bundled <code class="docutils literal notranslate"><span class="pre">tycmd</span></code> binary isn’t committed to this repository - it’s built from source
+automatically whenever it’s needed (e.g. by <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code>, <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">build</span></code>, or <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">tox</span></code>), the first
+time and whenever <code class="docutils literal notranslate"><span class="pre">tycmd.py</span></code>/<code class="docutils literal notranslate"><span class="pre">pdm_build.py</span></code> change. Building it requires <code class="docutils literal notranslate"><span class="pre">git</span></code> and a C++
+compiler; on Linux you’ll also need <code class="docutils literal notranslate"><span class="pre">libudev-dev</span></code>.</p>
+</section>
+<section id="running-the-test-suite">
+<h2>Running the test suite<a class="headerlink" href="#running-the-test-suite" title="Link to this heading"></a></h2>
+<p>Tests, linting, and type checking all run through <a class="reference external" href="https://tox.wiki/">tox</a> (via the
+<a class="reference external" href="https://github.com/tox-dev/tox-uv">tox-uv</a> plugin), across every supported Python version -
+uv provisions whichever interpreters are missing automatically:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>tox<span class="w"> </span>-p
+</pre></div>
+</div>
+</section>
+<section id="coverage-report">
+<h2>Coverage report<a class="headerlink" href="#coverage-report" title="Link to this heading"></a></h2>
+<p>After running the test suite, a merged coverage report is available via:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>coverage<span class="w"> </span>report
+</pre></div>
+</div>
+</section>
+<section id="checking-and-formatting-code">
+<h2>Checking and formatting code<a class="headerlink" href="#checking-and-formatting-code" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>format
+uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>--fix
+uv<span class="w"> </span>run<span class="w"> </span>mypy
+</pre></div>
+</div>
+</section>
+<section id="building-the-documentation">
+<h2>Building the documentation<a class="headerlink" href="#building-the-documentation" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>sphinx-build<span class="w"> </span>-b<span class="w"> </span>dirhtml<span class="w"> </span>./docs/source<span class="w"> </span>./docs/build
+</pre></div>
+</div>
+</section>
+<section id="building-the-package">
+<h2>Building the package<a class="headerlink" href="#building-the-package" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>build
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../api/" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../changelog/" class="btn btn-neutral float-right" title="Changelog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, International Brain Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
