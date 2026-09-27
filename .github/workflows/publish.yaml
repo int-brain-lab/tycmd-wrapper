@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build release packages
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     strategy:
@@ -31,10 +31,20 @@ jobs:
         run: |
           uv build --sdist
           uv build --wheel
-      - uses: actions/upload-artifact@v4
+      - name: Upload sdist
+        uses: actions/upload-artifact@v7
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+          archive: false
+          retention-days: 1
+      - name: Upload wheel
+        uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.os }}
           path: dist/*.whl
+          archive: false
           retention-days: 1
   publish:
     name: Upload to PyPI
@@ -46,9 +56,32 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: false
+      - uses: actions/download-artifact@v8
         with:
           merge-multiple: true
           path: dist
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        run: |
+          failed=0
+          for f in dist/*; do
+            uv publish --check-url https://pypi.org/simple "$f" || failed=1
+          done
+          exit $failed
+  release:
+    name: Create GitHub Release
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+          path: dist
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" --generate-notes
