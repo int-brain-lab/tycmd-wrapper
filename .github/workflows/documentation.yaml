@@ -24,7 +24,7 @@ jobs:
         with:
           cache-key-os: ubuntu-latest
       - name: Sphinx build
-        run: uv run --only-group doc sphinx-build -b dirhtml docs/source docs/build
+        run: uv run sphinx-build -b dirhtml docs/source docs/build
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
