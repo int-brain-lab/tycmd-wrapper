@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
 REPO_URL = 'https://github.com/Koromix/rygel'
 TYCMD_NAME = 'tycmd.exe' if system() == 'Windows' else 'tycmd'
+MACOS_DEPLOYMENT_TARGET = '11.0'
 
 
 def _tycmd_version() -> str:
@@ -64,7 +66,10 @@ def build_tycmd(output_dir: Path) -> Path:
             bootstrap = src / ('bootstrap.bat' if is_windows else 'bootstrap.sh')
             felix = src / ('felix.exe' if is_windows else 'felix')
             subprocess.check_call([str(bootstrap)], cwd=src, shell=is_windows)
-            subprocess.check_call([str(felix), '-pFast', 'tycmd'], cwd=src)
+            build_env = os.environ.copy()
+            if system() == 'Darwin':
+                build_env['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
+            subprocess.check_call([str(felix), '-pFast', 'tycmd'], cwd=src, env=build_env)
             built = next(src.joinpath('bin').rglob(TYCMD_NAME))
         except StopIteration as e:
             raise FileNotFoundError('Could not find built tycmd binary') from e
@@ -106,7 +111,8 @@ def pdm_build_initialize(context: Context):
         case "Windows", "AMD64":
             pass
         case "Darwin", "x86_64" | "arm64":
-            context.config_settings['--plat-name'] = f'macosx_11_0_{machine()}'
+            plat_version = MACOS_DEPLOYMENT_TARGET.replace('.', '_')
+            context.config_settings['--plat-name'] = f'macosx_{plat_version}_{machine()}'
         case "Linux", "x86_64" | "aarch64":
             pass
         case _:
