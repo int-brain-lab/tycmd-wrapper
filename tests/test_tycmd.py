@@ -11,14 +11,23 @@ BLINK40_HEX = Path(__file__).parent.joinpath('blink40.hex').resolve()
 BLINK41_HEX = Path(__file__).parent.joinpath('blink41.hex').resolve()
 
 
+@pytest.fixture(autouse=True)
+def _clear_resolve_tycmd_cache():
+    # _resolve_tycmd is cached, so a real resolution from one test would otherwise leak into
+    # the next (e.g. into test__resolve_tycmd's own mocked scenarios).
+    tycmd._resolve_tycmd.cache_clear()
+    yield
+    tycmd._resolve_tycmd.cache_clear()
+
+
 @pytest.fixture
 def mock_Popen():
     with patch('tycmd.Popen', autospec=True) as mock_Popen:
         context = mock_Popen.return_value.__enter__.return_value
 
-        def set_pipes(stdout: list[str] = [], stderr: list[str] = []):
-            context.stdout = stdout
-            context.stderr = stderr
+        def set_pipes(stdout: list[str] | None = None, stderr: list[str] | None = None):
+            context.stdout = stdout if stdout is not None else []
+            context.stderr = stderr if stderr is not None else []
             context.communicate.return_value = (
                 '\n'.join(context.stdout),
                 '\n'.join(context.stderr),
@@ -44,7 +53,7 @@ def test_upload(mock_Popen, caplog):
     assert '--rtc' in mock_Popen.call_args[0][0]
     assert '--quiet' not in mock_Popen.call_args[0][0]
     assert len(caplog.records) > 0
-    assert all([x.levelname == 'INFO' for x in caplog.records])
+    assert all(x.levelname == 'INFO' for x in caplog.records)
 
     caplog.clear()
     tycmd.upload(BLINK40_HEX, check=False, reset_board=False, log_level=logging.NOTSET)
@@ -66,7 +75,7 @@ def test_reset(mock_Popen, caplog):
     tycmd.reset()
     assert '--bootloader' not in mock_Popen.call_args[0][0]
     assert len(caplog.records) > 0
-    assert all([x.levelname == 'INFO' for x in caplog.records])
+    assert all(x.levelname == 'INFO' for x in caplog.records)
 
     mock_Popen.set_returncode(1)
     with pytest.raises(ChildProcessError):
@@ -150,5 +159,25 @@ def test__assemble_args():
         args=['some_argument'], serial='serial', family='family', port='port'
     )
     assert '-B serial-family@port' in ' '.join(output)
-    assert 'tycmd' in output
+    assert Path(output[0]).name == tycmd._TYCMD_NAME
     assert 'some_argument' in output
+
+
+def test__resolve_tycmd(tmp_path):
+    # _resolve_tycmd is cached (it's invariant for the life of the process), so each scenario
+    # below needs a fresh cache or it'd just keep returning the first call's result.
+    with patch('tycmd.sysconfig.get_path', return_value=str(tmp_path)):
+        # no binary at the expected "scripts" location -> falls back to a PATH lookup
+        with patch('tycmd.shutil.which', return_value=None):
+            assert tycmd._resolve_tycmd() == tycmd._TYCMD_NAME
+        tycmd._resolve_tycmd.cache_clear()
+        with patch('tycmd.shutil.which', return_value='/usr/bin/tycmd'):
+            assert tycmd._resolve_tycmd() == '/usr/bin/tycmd'
+        tycmd._resolve_tycmd.cache_clear()
+
+        # binary present at the expected "scripts" location -> used directly, no PATH lookup
+        candidate = tmp_path / tycmd._TYCMD_NAME
+        candidate.touch()
+        with patch('tycmd.shutil.which') as mock_which:
+            assert tycmd._resolve_tycmd() == str(candidate)
+            mock_which.assert_not_called()

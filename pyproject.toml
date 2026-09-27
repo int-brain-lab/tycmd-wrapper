@@ -27,27 +27,48 @@ path = "tycmd.py"
 
 [tool.pdm.build]
 includes = ["tycmd.py", "py.typed"]
-source-includes = ["bin/**/tycmd*", "tests", "docs", "*.md"]
+source-includes = ["tests", "docs", "*.md"]
 excludes = [".gitignore", "docs/build"]
 run-setuptools = false
 is-purelib = false
 
-[tool.pdm.dev-dependencies]
+[tool.uv.dependency-groups]
+doc = { requires-python = ">=3.14" }
+
+[dependency-groups]
 dev = [
-    "pdm-backend>=2.3.1",
-    "tycmd-wrapper[lint, test, doc]",
+    { include-group = "build" },
+    { include-group = "doc" },
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "typing" },
+]
+build = [
+    "pdm-backend",
 ]
 lint = [
+    "ruff>=0.15.0",
+]
+typing = [
     "mypy>=1.10.1",
-    "ruff>=0.5.1",
 ]
 test = [
+    { include-group = "lint" },
+    { include-group = "typing" },
+    { include-group = "tox" },
     "pytest>=8.2.2",
     "pytest-cov>=5.0.0",
 ]
+tox = [
+    "tox>=4.25.0",
+    "tox-uv>=1.11",
+]
+ci = [
+    "coveralls>=4.0.1",
+    "pytest-github-actions-annotate-failures>=0.3.0",
+]
 doc = [
-    "sphinx>=7.3.7",
-    "sphinx-autobuild>=2024.4.16",
+    "sphinx>=8.0.0",
     "sphinx-rtd-theme>=2.0.0",
     "myst-parser>=3.0.1",
 ]
@@ -71,6 +92,6 @@ convention = "numpy"
 files = ["tycmd.py"]
 
 [tool.pytest.ini_options]
-addopts    = "--cov=tycmd --cov-report=html --cov-report=xml"
+addopts    = "--cov=tycmd"
 minversion = "6.0"
 testpaths  = [ "tests" ]

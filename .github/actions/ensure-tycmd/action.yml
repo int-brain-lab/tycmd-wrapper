@@ -1,0 +1,77 @@
+name: Ensure tycmd binary
+description: >
+  Restore a cached tycmd binary for the current host, or build it from source via felix if
+  not cached. Requires actions/checkout and astral-sh/setup-uv to have already run.
+inputs:
+  cache-key-os:
+    description: >
+      Identifier used in the cache key. Distinguishes runner.os values that are actually
+      different architectures (e.g. ubuntu-latest vs ubuntu-24.04-arm both report Linux) -
+      pass matrix.os from the calling workflow, or a fixed string on a non-matrix job.
+    required: true
+  manylinux-image:
+    description: >
+      The manylinux container image (e.g. quay.io/pypa/manylinux_2_28_x86_64) this Linux build is
+      built under, if any - folded into the cache key so a changed image (a version bump, or one
+      workflow using a different image than another) invalidates a binary built under the old
+      one instead of silently reusing it. Leave empty on macOS/Windows, or a Linux build that
+      isn't manylinux-based at all.
+    required: false
+    default: ''
+  build-in-container:
+    description: >
+      'true' to actually build inside `manylinux-image` via a nested `docker run` (only on a
+      cache miss), keeping the calling job itself on the bare runner throughout - use this when
+      the calling job is *not* already container-scoped (e.g. testing.yaml, where tests must run
+      outside the container). Leave as 'false' (default) when the calling job's own job-level
+      `container:` already *is* `manylinux-image` (e.g. a release build) - there, `manylinux-image`
+      is passed only for the cache key, and the direct build path below already runs in the right
+      environment on its own.
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Cache tycmd binary
+      id: cache-tycmd
+      uses: actions/cache@v4
+      with:
+        path: bin
+        key: tycmd-${{ inputs.cache-key-os }}-${{ inputs.manylinux-image || 'host' }}-${{ hashFiles('tycmd.py', 'pdm_build.py') }}
+    - name: Install libudev (Linux, direct)
+      if: >
+        runner.os == 'Linux' && inputs.build-in-container != 'true' &&
+        steps.cache-tycmd.outputs.cache-hit != 'true'
+      shell: bash
+      # Covers two different "direct" cases: a genuinely bare Ubuntu runner (apt, needs sudo), or
+      # a job that's already container-scoped by the caller itself via GitHub's job-level
+      # `container:` (e.g. publish.yaml) - AlmaLinux/dnf, already root, no sudo binary at all.
+      run: |
+        if command -v apt-get >/dev/null; then
+          sudo apt-get update && sudo apt-get install -y libudev-dev
+        elif command -v dnf >/dev/null; then
+          dnf install -y systemd-devel
+        else
+          echo "::error::No supported package manager found for libudev" && exit 1
+        fi
+    - name: Set up MSVC (Windows)
+      if: runner.os == 'Windows' && steps.cache-tycmd.outputs.cache-hit != 'true'
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: Ensure tycmd binary (builds from source if not cached)
+      if: runner.os != 'Linux' || inputs.build-in-container != 'true'
+      shell: bash
+      run: python3 pdm_build.py
+    - name: Ensure tycmd binary in manylinux container (builds from source if not cached)
+      if: >
+        runner.os == 'Linux' && inputs.build-in-container == 'true' &&
+        steps.cache-tycmd.outputs.cache-hit != 'true'
+      shell: bash
+      # Root inside the container writes bin/tycmd as root on the bind-mounted host path too, so
+      # reclaim ownership afterward - later steps (cache save, uv build) run as the runner user.
+      run: |
+        docker run --rm -v "$PWD:/workspace" -w /workspace "${{ inputs.manylinux-image }}" bash -c '
+          set -e
+          dnf install -y systemd-devel
+          python3 pdm_build.py
+        '
+        sudo chown -R "$(id -u):$(id -g)" bin
