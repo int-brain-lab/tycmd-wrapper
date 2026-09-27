@@ -107,16 +107,9 @@ def pdm_build_initialize(context: Context):
     context.config_settings['--python-tag'] = 'py3'
     context.config_settings['--py-limited-api'] = 'none'
 
-    match system(), machine():
-        case "Windows", "AMD64":
-            pass
-        case "Darwin", "x86_64" | "arm64":
-            plat_version = MACOS_DEPLOYMENT_TARGET.replace('.', '_')
-            context.config_settings['--plat-name'] = f'macosx_{plat_version}_{machine()}'
-        case "Linux", "x86_64" | "aarch64":
-            pass
-        case _:
-            raise NotImplementedError(f"Unsupported platform: {system()} {machine()}")
+    if system() == 'Darwin':
+        plat_version = MACOS_DEPLOYMENT_TARGET.replace('.', '_')
+        context.config_settings['--plat-name'] = f'macosx_{plat_version}_{machine()}'
 
     output_dir = Path(__file__).parent / 'bin'
     tycmd = _ensure_tycmd(output_dir)
