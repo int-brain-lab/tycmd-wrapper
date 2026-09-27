@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build release packages
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     strategy:
