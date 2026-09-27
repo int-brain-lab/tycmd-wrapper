@@ -32,12 +32,19 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Determine tycmd version
+      # Only the pinned _TYCMD_VERSION string actually affects the built binary - hashing all
+      # of tycmd.py (like `hashFiles('tycmd.py')` would) busts the cache on every edit to the
+      # Python wrapper itself, even changes with no bearing on what felix compiles.
+      id: tycmd-version
+      shell: bash
+      run: echo "version=$(python3 -c 'import pdm_build; print(pdm_build._tycmd_version())')" >> "$GITHUB_OUTPUT"
     - name: Cache tycmd binary
       id: cache-tycmd
       uses: actions/cache@v4
       with:
         path: bin
-        key: tycmd-${{ inputs.cache-key-os }}-${{ inputs.manylinux-image || 'host' }}-${{ hashFiles('tycmd.py', 'pdm_build.py') }}
+        key: tycmd-${{ inputs.cache-key-os }}-${{ inputs.manylinux-image || 'host' }}-${{ steps.tycmd-version.outputs.version }}-${{ hashFiles('pdm_build.py') }}
     - name: Install libudev (Linux, direct)
       if: >
         runner.os == 'Linux' && inputs.build-in-container != 'true' &&
