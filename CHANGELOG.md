@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- macOS now ships as two separate, correctly-tagged wheels (`macosx_11_0_arm64` and
+  `macosx_11_0_x86_64`) instead of a single x86_64-only wheel, fixing installation on Apple Silicon
+- Linux arm64 is now a published wheel target
+- the `tycmd` binary is no longer committed to the repository; it's built from source during CI
+  (and on demand for local installs) instead
+
 ## [0.2.1] - 2024-08-06
 
 ### Changed
