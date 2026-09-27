@@ -171,5 +171,5 @@ cython_debug/
 
 .idea/
 
-# tycmd binaries, built by scripts/build_tycmd.py
+# tycmd binaries, built by pdm_build.py
 bin/

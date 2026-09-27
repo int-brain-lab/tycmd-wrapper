@@ -90,6 +90,6 @@ convention = "numpy"
 files = ["tycmd.py"]
 
 [tool.pytest.ini_options]
-addopts    = "--cov=tycmd --cov-report=html --cov-report=xml"
+addopts    = "--cov=tycmd"
 minversion = "6.0"
 testpaths  = [ "tests" ]

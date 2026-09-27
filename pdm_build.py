@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from pdm.backend.hooks import Context  # Only needed for the type annotation
 
 REPO_URL = 'https://github.com/Koromix/rygel'
+TYCMD_NAME = 'tycmd.exe' if system() == 'Windows' else 'tycmd'
 
 
 def _tycmd_version() -> str:
@@ -23,11 +24,9 @@ def _tycmd_version() -> str:
 
 
 def _check_version(binary: Path, version: str) -> None:
-    result = subprocess.check_output([str(binary), '--version'], text=True, timeout=5)
-    if version not in result:
-        raise RuntimeError(
-            f'{binary} reports unexpected version: {result.strip()!r} (expected {version!r})'
-        )
+    result = subprocess.check_output([str(binary), '--version'], text=True, timeout=30)
+    if version not in result.split():
+        raise RuntimeError(f'{binary} reports unexpected version: {result.strip()!r} (expected {version!r})')
 
 
 def build_tycmd(output_dir: Path) -> Path:
@@ -66,11 +65,11 @@ def build_tycmd(output_dir: Path) -> Path:
             felix = src / ('felix.exe' if is_windows else 'felix')
             subprocess.check_call([str(bootstrap)], cwd=src, shell=is_windows)
             subprocess.check_call([str(felix), '-pFast', 'tycmd'], cwd=src)
-            built = next((src / 'bin' / 'Fast').glob('tycmd*'))
+            built = next(src.joinpath('bin').rglob(TYCMD_NAME))
+        except StopIteration as e:
+            raise FileNotFoundError('Could not find built tycmd binary') from e
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f'Could not build tycmd {version}') from e
-        except StopIteration as e:
-            raise RuntimeError(f'Cannot find built tycmd binary in {src / "bin" / "Fast"}') from e
 
         output_dir.mkdir(parents=True, exist_ok=True)
         binary = Path(shutil.copy2(built, output_dir / built.name))
@@ -85,15 +84,15 @@ def build_tycmd(output_dir: Path) -> Path:
 def _ensure_tycmd(output_dir: Path) -> Path:
     """Return a working tycmd binary in `output_dir` matching the pinned version."""
     version = _tycmd_version()
-    existing = next(output_dir.glob('tycmd*'), None)
-    if existing is not None:
+    existing = output_dir / TYCMD_NAME
+    if existing.exists():
         if system() != 'Windows':
             existing.chmod(0o755)
         try:
             _check_version(existing, version)
             return existing
-        except Exception:
-            print(f'{existing} is stale or broken, rebuilding...')
+        except Exception as e:
+            print(f'{existing} is stale or broken ({e!r}), rebuilding...')
     return build_tycmd(output_dir)
 
 

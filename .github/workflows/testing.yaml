@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: bin
-          key: tycmd-ubuntu-latest-${{ hashFiles('tycmd.py') }}
+          key: tycmd-ubuntu-latest-${{ hashFiles('tycmd.py', 'pdm_build.py') }}
       - name: Install libudev
         if: steps.cache-tycmd.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: bin
-          key: tycmd-${{ matrix.os }}-${{ hashFiles('tycmd.py') }}
+          key: tycmd-${{ matrix.os }}-${{ hashFiles('tycmd.py', 'pdm_build.py') }}
       - name: Install libudev (Linux)
         if: runner.os == 'Linux' && steps.cache-tycmd.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
