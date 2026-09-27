@@ -31,7 +31,15 @@ jobs:
         run: |
           uv build --sdist
           uv build --wheel
-      - uses: actions/upload-artifact@v4
+      - name: upload sdist
+        uses: actions/upload-artifact@v7
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+          retention-days: 1
+      - name: upload wheel
+        uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.os }}
           path: dist/*.whl
@@ -46,9 +54,10 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/download-artifact@v8
         with:
           merge-multiple: true
           path: dist
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        run: uv publish
