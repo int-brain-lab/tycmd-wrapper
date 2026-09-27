@@ -20,17 +20,9 @@ jobs:
         with:
           enable-cache: true
           python-version: '3.10'
-      - name: Cache tycmd binary
-        id: cache-tycmd
-        uses: actions/cache@v4
+      - uses: ./.github/actions/ensure-tycmd
         with:
-          path: bin
-          key: tycmd-ubuntu-latest-${{ hashFiles('tycmd.py', 'pdm_build.py') }}
-      - name: Install libudev
-        if: steps.cache-tycmd.outputs.cache-hit != 'true'
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
-      - name: Ensure tycmd binary (builds from source if not cached)
-        run: python3 pdm_build.py
+          cache-key-os: ubuntu-latest
       - name: Install dependencies
         run: uv sync --no-default-groups --group doc
       - name: Sphinx build

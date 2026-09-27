@@ -22,17 +22,9 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - name: Cache tycmd binary
-        id: cache-tycmd
-        uses: actions/cache@v4
+      - uses: ./.github/actions/ensure-tycmd
         with:
-          path: bin
-          key: tycmd-ubuntu-latest-${{ hashFiles('tycmd.py', 'pdm_build.py') }}
-      - name: Install libudev
-        if: steps.cache-tycmd.outputs.cache-hit != 'true'
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
-      - name: Ensure tycmd binary (builds from source if not cached)
-        run: python3 pdm_build.py
+          cache-key-os: ubuntu-latest
       - name: Sync dependencies
         run: uv sync --no-default-groups --group tox
       - run: uv run tox -m 'typing' --fail-fast -p --parallel-no-spinner
@@ -46,20 +38,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
-      - name: Cache tycmd binary
-        id: cache-tycmd
-        uses: actions/cache@v4
+      - uses: ./.github/actions/ensure-tycmd
         with:
-          path: bin
-          key: tycmd-${{ matrix.os }}-${{ hashFiles('tycmd.py', 'pdm_build.py') }}
-      - name: Install libudev (Linux)
-        if: runner.os == 'Linux' && steps.cache-tycmd.outputs.cache-hit != 'true'
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
-      - name: Set up MSVC (Windows)
-        if: runner.os == 'Windows' && steps.cache-tycmd.outputs.cache-hit != 'true'
-        uses: ilammy/msvc-dev-cmd@v1
-      - name: Ensure tycmd binary (builds from source if not cached)
-        run: python3 pdm_build.py
+          cache-key-os: ${{ matrix.os }}
       - name: Sync dependencies
         run: uv sync --no-default-groups --group tox --group ci
       - name: Build wheel

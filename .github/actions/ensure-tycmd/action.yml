@@ -1,0 +1,30 @@
+name: Ensure tycmd binary
+description: >
+  Restore a cached tycmd binary for the current host, or build it from source via felix if
+  not cached. Requires actions/checkout and astral-sh/setup-uv to have already run.
+inputs:
+  cache-key-os:
+    description: >
+      Identifier used in the cache key. Distinguishes runner.os values that are actually
+      different architectures (e.g. ubuntu-latest vs ubuntu-24.04-arm both report Linux) -
+      pass matrix.os from the calling workflow, or a fixed string on a non-matrix job.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Cache tycmd binary
+      id: cache-tycmd
+      uses: actions/cache@v4
+      with:
+        path: bin
+        key: tycmd-${{ inputs.cache-key-os }}-${{ hashFiles('tycmd.py', 'pdm_build.py') }}
+    - name: Install libudev (Linux)
+      if: runner.os == 'Linux' && steps.cache-tycmd.outputs.cache-hit != 'true'
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y libudev-dev
+    - name: Set up MSVC (Windows)
+      if: runner.os == 'Windows' && steps.cache-tycmd.outputs.cache-hit != 'true'
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: Ensure tycmd binary (builds from source if not cached)
+      shell: bash
+      run: python3 pdm_build.py
