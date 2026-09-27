@@ -13,7 +13,8 @@ pip install tycmd-wrapper
 ```
 
 This will install tycmd-wrapper along with the necessary tycmd binary for your system.
-Requires Python 3.10 or later. Supported platforms are:
+
+tycmd-wrapper requires Python 3.10 or later. Supported platforms are:
 
 - Linux (x86_64, arm64)
 - macOS (Intel, Apple Silicon)
