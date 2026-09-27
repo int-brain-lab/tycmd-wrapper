@@ -15,7 +15,7 @@ from typing import Literal
 
 log = logging.getLogger(__name__)
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 _TYCMD_VERSION = '0.9.9'
 _TYCMD_NAME = 'tycmd.exe' if sys.platform == 'win32' else 'tycmd'
 _RE_STRIP_TAG = re.compile(r'(^\s*\w+@\w+-\w+\s+)')  # match board tag
