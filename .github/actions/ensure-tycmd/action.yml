@@ -41,7 +41,7 @@ runs:
       run: echo "version=$(python3 -c 'import pdm_build; print(pdm_build._tycmd_version())')" >> "$GITHUB_OUTPUT"
     - name: Cache tycmd binary
       id: cache-tycmd
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: bin
         key: tycmd-${{ inputs.cache-key-os }}-${{ inputs.manylinux-image || 'host' }}-${{ steps.tycmd-version.outputs.version }}-${{ hashFiles('pdm_build.py') }}
