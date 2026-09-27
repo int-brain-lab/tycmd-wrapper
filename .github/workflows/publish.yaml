@@ -64,4 +64,9 @@ jobs:
           merge-multiple: true
           path: dist
       - name: Publish to PyPI
-        run: uv publish --check-url https://pypi.org/simple
+        run: |
+          failed=0
+          for f in dist/*; do
+            uv publish --check-url https://pypi.org/simple "$f" || failed=1
+          done
+          exit $failed
