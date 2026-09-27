@@ -1,7 +1,7 @@
 tycmd-wrapper
 =============
 
-A Python wrapper for [tycmd](https://koromix.dev/tytools) by 
+A thin Python wrapper for [tycmd](https://koromix.dev/tytools) by 
 [Niels Martignène](https://github.com/Koromix/) - a tool for managing 
 [Teensy USB Development Boards](https://www.pjrc.com/teensy/) by PJRC.
 
@@ -13,7 +13,7 @@ pip install tycmd-wrapper
 ```
 
 This will install tycmd-wrapper along with the necessary tycmd binary for your system.
-Supported platforms are:
+Requires Python 3.10 or later. Supported platforms are:
 
 - Linux (x86_64, arm64)
 - macOS (Intel, Apple Silicon)

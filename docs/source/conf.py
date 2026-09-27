@@ -15,8 +15,14 @@ release = version
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx_autodoc_typehints',
+    'sphinx.ext.intersphinx',
     'myst_parser',
 ]
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+}
 source_suffix = ['.rst', '.md']
 templates_path = ['_templates']
 exclude_patterns = []
@@ -26,11 +32,9 @@ exclude_patterns = []
 
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
-    'display_version': True,
     'collapse_navigation': True,
     'sticky_navigation': True,
     'navigation_depth': 2,
     'includehidden': True,
     'titles_only': False
 }
-html_static_path = ['_static']

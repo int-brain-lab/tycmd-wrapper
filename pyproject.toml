@@ -32,6 +32,9 @@ excludes = [".gitignore", "docs/build"]
 run-setuptools = false
 is-purelib = false
 
+[tool.uv.dependency-groups]
+doc = { requires-python = ">=3.14" }
+
 [dependency-groups]
 dev = [
     { include-group = "build" },
@@ -65,8 +68,7 @@ ci = [
     "pytest-github-actions-annotate-failures>=0.3.0",
 ]
 doc = [
-    "sphinx>=7.3.7",
-    "sphinx-autobuild>=2024.4.16",
+    "sphinx>=8.0.0",
     "sphinx-rtd-theme>=2.0.0",
     "myst-parser>=3.0.1",
 ]

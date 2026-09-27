@@ -3,19 +3,27 @@
 import json
 import logging
 import re
+import shutil
+import sys
+import sysconfig
+from functools import cache
+from os import PathLike
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, Popen
+from threading import Thread
 from typing import Literal
 
 log = logging.getLogger(__name__)
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 _TYCMD_VERSION = '0.9.9'
-RE_STRIP_TAG = re.compile(r'(^\s*\w+@\w+-\w+\s+)')  # match board tag
+_TYCMD_NAME = 'tycmd.exe' if sys.platform == 'win32' else 'tycmd'
+_RE_STRIP_TAG = re.compile(r'(^\s*\w+@\w+-\w+\s+)')  # match board tag
+_RE_VERSION = re.compile(r'\d+\.\d+\.\d+')  # match semantic version number
 
 
 def upload(
-    filename: Path | str,
+    filename: PathLike | str,
     port: str | None = None,
     serial: str | None = None,
     check: bool = True,
@@ -28,7 +36,7 @@ def upload(
 
     Parameters
     ----------
-    filename : Path | str
+    filename : PathLike | str
         Path to the firmware file.
 
     port : str, optional
@@ -92,13 +100,13 @@ def reset(
     _call_tycmd(args, serial=serial, port=port, log_level=log_level)
 
 
-def identify(filename: Path | str) -> list[str]:
+def identify(filename: PathLike | str) -> list[str]:
     """
     Identify models compatible with firmware.
 
     Parameters
     ----------
-    filename : Path | str
+    filename : PathLike | str
         Path to the firmware file.
 
     Returns
@@ -141,14 +149,14 @@ def version() -> str:
         If the version string could not be determined.
     """
     output = _call_tycmd(['--version'])
-    match = re.search(r'\d+\.\d+\.\d+', output)
+    match = _RE_VERSION.search(output)
     if match is None:
         raise ChildProcessError('Could not determine tycmd version')
     else:
         return match.group()
 
 
-def _parse_firmware_file(filename: str | Path) -> Path:
+def _parse_firmware_file(filename: PathLike | str) -> Path:
     filepath = Path(filename).resolve()
     if not filepath.exists():
         raise FileNotFoundError(filepath)
@@ -177,19 +185,28 @@ def _call_tycmd(
     # Call tycmd
     with Popen(args, stdout=PIPE, stderr=PIPE, text=True, bufsize=1) as p:
         if log_level > logging.NOTSET:
-            stdout = ''
             assert p.stdout is not None
-            for line in p.stdout:
-                line = re.sub(
-                    pattern=RE_STRIP_TAG, repl='', string=line, count=1
-                ).strip()
+            assert p.stderr is not None
+            stdout_stream, stderr_stream = p.stdout, p.stderr
+
+            stderr_chunks: list[str] = []
+            stderr_thread = Thread(
+                target=lambda: stderr_chunks.append(''.join(stderr_stream)), daemon=True
+            )
+            stderr_thread.start()
+
+            stdout = ''
+            for line in stdout_stream:
+                line = _RE_STRIP_TAG.sub('', line, count=1).strip()
                 log.log(level=log_level, msg=line)
                 stdout += line
-            _, stderr = p.communicate()
+
+            stderr_thread.join()
+            stderr = stderr_chunks[0]
         else:
             stdout, stderr = p.communicate()
-            stdout = re.sub(pattern=RE_STRIP_TAG, repl='', string=stdout).strip()
-    stderr = re.sub(pattern=RE_STRIP_TAG, repl='', string=stderr).strip()
+            stdout = _RE_STRIP_TAG.sub('', stdout).strip()
+    stderr = _RE_STRIP_TAG.sub('', stderr).strip()
 
     # Raise non-zero exit codes as a RuntimeError
     if p.returncode != 0:
@@ -205,13 +222,22 @@ def _call_tycmd(
     return stdout
 
 
+@cache
+def _resolve_tycmd() -> str:
+    """Resolve the path to the bundled tycmd binary."""
+    candidate = Path(sysconfig.get_path('scripts')) / _TYCMD_NAME
+    if candidate.is_file():
+        return str(candidate)
+    return shutil.which(_TYCMD_NAME) or _TYCMD_NAME
+
+
 def _assemble_args(
     args: list[str],
     port: str | None = None,
     serial: str | None = None,
     family: str | None = None,
 ) -> list[str]:
-    output = ['tycmd', *args]
+    output = [_resolve_tycmd(), *args]
     if any((port, serial, family)):
         tag = '' if serial is None else str(serial)
         tag += '' if family is None else f'-{family}'

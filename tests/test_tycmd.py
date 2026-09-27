@@ -11,6 +11,15 @@ BLINK40_HEX = Path(__file__).parent.joinpath('blink40.hex').resolve()
 BLINK41_HEX = Path(__file__).parent.joinpath('blink41.hex').resolve()
 
 
+@pytest.fixture(autouse=True)
+def _clear_resolve_tycmd_cache():
+    # _resolve_tycmd is cached, so a real resolution from one test would otherwise leak into
+    # the next (e.g. into test__resolve_tycmd's own mocked scenarios).
+    tycmd._resolve_tycmd.cache_clear()
+    yield
+    tycmd._resolve_tycmd.cache_clear()
+
+
 @pytest.fixture
 def mock_Popen():
     with patch('tycmd.Popen', autospec=True) as mock_Popen:
@@ -150,5 +159,25 @@ def test__assemble_args():
         args=['some_argument'], serial='serial', family='family', port='port'
     )
     assert '-B serial-family@port' in ' '.join(output)
-    assert 'tycmd' in output
+    assert Path(output[0]).name == tycmd._TYCMD_NAME
     assert 'some_argument' in output
+
+
+def test__resolve_tycmd(tmp_path):
+    # _resolve_tycmd is cached (it's invariant for the life of the process), so each scenario
+    # below needs a fresh cache or it'd just keep returning the first call's result.
+    with patch('tycmd.sysconfig.get_path', return_value=str(tmp_path)):
+        # no binary at the expected "scripts" location -> falls back to a PATH lookup
+        with patch('tycmd.shutil.which', return_value=None):
+            assert tycmd._resolve_tycmd() == tycmd._TYCMD_NAME
+        tycmd._resolve_tycmd.cache_clear()
+        with patch('tycmd.shutil.which', return_value='/usr/bin/tycmd'):
+            assert tycmd._resolve_tycmd() == '/usr/bin/tycmd'
+        tycmd._resolve_tycmd.cache_clear()
+
+        # binary present at the expected "scripts" location -> used directly, no PATH lookup
+        candidate = tmp_path / tycmd._TYCMD_NAME
+        candidate.touch()
+        with patch('tycmd.shutil.which') as mock_which:
+            assert tycmd._resolve_tycmd() == str(candidate)
+            mock_which.assert_not_called()
