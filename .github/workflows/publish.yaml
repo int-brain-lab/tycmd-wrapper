@@ -37,12 +37,14 @@ jobs:
         with:
           name: sdist
           path: dist/*.tar.gz
+          archive: false
           retention-days: 1
       - name: upload wheel
         uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.os }}
           path: dist/*.whl
+          archive: false
           retention-days: 1
   publish:
     name: Upload to PyPI
