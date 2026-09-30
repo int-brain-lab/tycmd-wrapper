@@ -47,7 +47,7 @@ def mock_Popen():
 def test_upload(mock_Popen, caplog):
     mock_Popen.set_pipes(stdout=['output'])
     caplog.set_level(logging.INFO)
-    tycmd.upload(BLINK40_HEX, check=True, reset_board=True)
+    tycmd.upload(BLINK40_HEX, check=True, reset=True)
     assert '--nocheck' not in mock_Popen.call_args[0][0]
     assert '--noreset' not in mock_Popen.call_args[0][0]
     assert '--rtc' in mock_Popen.call_args[0][0]
@@ -56,7 +56,7 @@ def test_upload(mock_Popen, caplog):
     assert all(x.levelname == 'INFO' for x in caplog.records)
 
     caplog.clear()
-    tycmd.upload(BLINK40_HEX, check=False, reset_board=False, log_level=logging.NOTSET)
+    tycmd.upload(BLINK40_HEX, check=False, reset=False, log_level=logging.NOTSET)
     assert '--nocheck' in mock_Popen.call_args[0][0]
     assert '--noreset' in mock_Popen.call_args[0][0]
     assert '--rtc' in mock_Popen.call_args[0][0]
@@ -104,6 +104,19 @@ def test_list_boards(mock_Popen):
     assert isinstance(output, list)
     assert isinstance(output[0], dict)
     assert output[0]['serial'] == '12345678'
+    assert output[0]['public_key_hash'] is None
+
+    # keys that tycmd omits are filled in with None
+    stdout = (
+        '[\n  {"action": "add", "tag": "12345678-Teensy", "model": "Teensy 4.1", '
+        '"location": "usb-3-3", "capabilities": [], "interfaces": []}\n]\n'
+    )
+    mock_Popen.set_pipes([stdout], [])
+    board = tycmd.list_boards()[0]
+    assert board['serial'] is None
+    assert board['description'] is None
+    assert board['public_key_hash'] is None
+    assert board['tag'] == '12345678-Teensy'
 
     mock_Popen.set_pipes(['[\n]\n'], [])
     output = tycmd.list_boards()
@@ -149,16 +162,16 @@ def test__call_tycmd(mock_Popen):
 
 
 def test__assemble_args():
-    output = tycmd._assemble_args(args=[], serial='serial')
-    assert '-B serial' in ' '.join(output)
-    output = tycmd._assemble_args(args=[], family='family')
-    assert '-B -family' in ' '.join(output)
-    output = tycmd._assemble_args(args=[], port='port')
-    assert '-B @port' in ' '.join(output)
+    assert '--board=serial' in tycmd._assemble_args(args=[], serial='serial')
+    assert '--board=-family' in tycmd._assemble_args(args=[], family='family')
+    assert '--board=@port' in tycmd._assemble_args(args=[], port='port')
+    assert '--board' not in ''.join(tycmd._assemble_args(args=[]))
+
     output = tycmd._assemble_args(
         args=['some_argument'], serial='serial', family='family', port='port'
     )
-    assert '-B serial-family@port' in ' '.join(output)
+    assert '--board=serial-family@port' in output
+    assert '-B' not in output
     assert Path(output[0]).name == tycmd._TYCMD_NAME
     assert 'some_argument' in output
 

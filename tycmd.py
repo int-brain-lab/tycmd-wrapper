@@ -11,24 +11,87 @@ from os import PathLike
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, Popen
 from threading import Thread
-from typing import Literal
+from typing import Literal, TypeAlias, TypedDict
 
 log = logging.getLogger(__name__)
+
+Family: TypeAlias = Literal['Teensy', 'Generic']
+"""Family of a board."""
+
+RtcMode: TypeAlias = Literal['local', 'utc', 'none']
+"""How to set the board's real-time clock on upload."""
+
+Capability: TypeAlias = Literal[
+    'unique',
+    'void',
+    'run',
+    'upload',
+    'encrypt',
+    'lock',
+    'locked',
+    'reset',
+    'rtc',
+    'reboot',
+    'serial',
+]
+"""Something a board can do or be:
+
+- ``'unique'``: the serial number tells this board apart from others
+- ``'void'``: the board is in a secured (HAB) state where a bootloader has to be sent first
+- ``'run'``: the board is running firmware
+- ``'upload'``: the board accepts firmware uploads
+- ``'encrypt'``: the board supports encrypted firmware
+- ``'lock'``: the board's encryption key can be locked
+- ``'locked'``: the board's encryption key is locked
+- ``'reset'``: the board can be reset
+- ``'rtc'``: the board's real-time clock can be set
+- ``'reboot'``: the board can be rebooted into its bootloader
+- ``'serial'``: the board has a serial interface
+"""
+
+BoardAction: TypeAlias = Literal['add', 'change', 'miss', 'remove']
+"""Event that produced a board entry."""
 
 __version__ = '0.3.1'
 _TYCMD_VERSION = '0.9.9'
 _TYCMD_NAME = 'tycmd.exe' if sys.platform == 'win32' else 'tycmd'
+_OPTIONAL_BOARD_KEYS = ('serial', 'description', 'public_key_hash')
 _RE_STRIP_TAG = re.compile(r'(^\s*\w+@\w+-\w+\s+)')  # match board tag
 _RE_VERSION = re.compile(r'\d+\.\d+\.\d+')  # match semantic version number
 
 
+class Board(TypedDict):
+    """A :class:`~typing.TypedDict` describing a board."""
+
+    action: BoardAction
+    """The event that produced this entry."""
+    tag: str
+    """The entries' tag, e.g. ``'12345678-Teensy@1'``."""
+    model: str
+    """Model name of the board, e.g. ``'Teensy 4.1'``."""
+    location: str
+    """USB location of the board, e.g. ``'usb-3-2'``."""
+    capabilities: list[Capability]
+    """Capabilities of the board."""
+    interfaces: list[list[str]]  # [name, path]
+    """Interfaces of the board as ``[name, path]`` pairs, e.g. ``['Serial', '/dev/ttyACM0']``."""
+    serial: str | None
+    """Serial number of the board, or :py:obj:`None` if it does not report one."""
+    description: str | None
+    """Description of the board as reported by USB, or :py:obj:`None`."""
+    public_key_hash: str | None
+    """Hash of the public key used for encrypted firmware, or :py:obj:`None`."""
+
+
 def upload(
     filename: PathLike | str,
-    port: str | None = None,
+    *,
     serial: str | None = None,
+    port: str | None = None,
+    family: Family | None = None,
     check: bool = True,
-    reset_board: bool = True,
-    rtc_mode: Literal['local', 'utc', 'none'] = 'local',
+    reset: bool = True,
+    rtc: RtcMode = 'local',
     log_level: int = logging.INFO,
 ):
     """
@@ -36,42 +99,40 @@ def upload(
 
     Parameters
     ----------
-    filename : PathLike | str
+    filename : PathLike or str
         Path to the firmware file.
-
-    port : str, optional
-        Port of targeted board.
-
     serial : str, optional
-        Serial number of targeted board.
-
-    check : bool, optional
-        Check if board is compatible before upload. Defaults to True.
-
-    reset_board : bool, optional
-        Reset the device once the upload is finished. Defaults to True.
-
-    rtc_mode : str, optional
-        Set RTC if supported: 'local' (default), 'utc' or 'none'.
-
-    log_level : int, optional
-        Log level. Defaults to INFO.
+        Serial number of the targeted board.
+    port : str, optional
+        Port of the targeted board.
+    family : Family, optional
+        Family of the targeted board.
+    check : bool, default: True
+        Check if the board is compatible before upload.
+    reset : bool, default: True
+        Reset the device once the upload is finished.
+    rtc : RtcMode, default: 'local'
+        Set RTC if supported: 'local', 'utc' or 'none'.
+    log_level : int, default: :py:data:`logging.INFO`
+        Log level.
     """
     filename = str(_parse_firmware_file(filename))
     args = ['upload']
     if not check:
         args.append('--nocheck')
-    if not reset_board:
+    if not reset:
         args.append('--noreset')
     if log_level == logging.NOTSET:
         args.append('--quiet')
-    args.extend(['--rtc', rtc_mode, filename])
-    _call_tycmd(args, port=port, serial=serial, log_level=log_level)
+    args.extend(['--rtc', rtc, filename])
+    _call_tycmd(args, port=port, serial=serial, family=family, log_level=log_level)
 
 
 def reset(
-    port: str | None = None,
+    *,
     serial: str | None = None,
+    port: str | None = None,
+    family: Family | None = None,
     bootloader: bool = False,
     log_level: int = logging.INFO,
 ) -> None:
@@ -80,17 +141,20 @@ def reset(
 
     Parameters
     ----------
-    port : str, optional
-        Port of targeted board.
-
     serial : str, optional
         Serial number of targeted board.
 
-    bootloader : bool, optional
-        Switch board to bootloader if True. Default is False.
+    port : str, optional
+        Port of targeted board.
 
-    log_level : int, optional
-        Log level. Defaults to INFO.
+    family : Family, optional
+        Family of the targeted board.
+
+    bootloader : bool, default: False
+        Switch board to bootloader if True.
+
+    log_level : int, default: :py:data:`logging.INFO`
+        Log level.
     """
     args = ['reset']
     if bootloader:
@@ -121,17 +185,18 @@ def identify(filename: PathLike | str) -> list[str]:
     return output.get('models', [])
 
 
-def list_boards() -> list[dict]:
+def list_boards() -> list[Board]:
     """
     List available boards.
 
     Returns
     -------
-    list[dict]
-        List of available devices.
+    list[Board]
+        List of available boards. ``serial``, ``description`` and ``public_key_hash`` are :py:obj:`None`
+        if the board does not report them.
     """
     output = _call_tycmd(['list', '-O', 'json', '-v'])
-    return json.loads(output)
+    return [_normalize_board(board) for board in json.loads(output)]
 
 
 def version() -> str:
@@ -156,6 +221,13 @@ def version() -> str:
         return match.group()
 
 
+def _normalize_board(board: dict) -> Board:
+    """Fill in the keys that tycmd omits when a board doesn't report them."""
+    for key in _OPTIONAL_BOARD_KEYS:
+        board.setdefault(key, None)
+    return board  # type: ignore[return-value]
+
+
 def _parse_firmware_file(filename: PathLike | str) -> Path:
     filepath = Path(filename).resolve()
     if not filepath.exists():
@@ -173,9 +245,10 @@ def _parse_firmware_file(filename: PathLike | str) -> Path:
 
 def _call_tycmd(
     args: list[str],
+    *,
     serial: str | None = None,
-    family: str | None = None,
     port: str | None = None,
+    family: str | None = None,
     raise_on_stderr: bool = False,
     log_level: int = logging.NOTSET,
 ) -> str:
@@ -242,5 +315,5 @@ def _assemble_args(
         tag = '' if serial is None else str(serial)
         tag += '' if family is None else f'-{family}'
         tag += '' if port is None else f'@{port}'
-        output.extend(['-B', tag])
+        output.append(f'--board={tag}')
     return output

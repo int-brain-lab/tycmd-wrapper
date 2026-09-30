@@ -14,17 +14,23 @@ release = version
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    # 'sphinx_toolbox.more_autodoc.typehints',
+    'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'myst_parser',
 ]
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
 }
+autodoc_typehints = 'description'
 source_suffix = ['.rst', '.md']
 templates_path = ['_templates']
 exclude_patterns = []
+
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
+napoleon_preprocess_types = True
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
