@@ -11,7 +11,7 @@ from os import PathLike
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, Popen
 from threading import Thread
-from typing import Literal, TypeAlias, TypedDict
+from typing import Literal, TypeAlias, TypedDict, cast
 
 log = logging.getLogger(__name__)
 
@@ -225,7 +225,7 @@ def _normalize_board(board: dict) -> Board:
     """Fill in the keys that tycmd omits when a board doesn't report them."""
     for key in _OPTIONAL_BOARD_KEYS:
         board.setdefault(key, None)
-    return board  # type: ignore[return-value]  # dict -> Board TypedDict
+    return cast(Board, board)
 
 
 def _parse_firmware_file(filename: PathLike | str) -> Path:
