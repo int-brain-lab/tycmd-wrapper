@@ -225,7 +225,7 @@ def _normalize_board(board: dict) -> Board:
     """Fill in the keys that tycmd omits when a board doesn't report them."""
     for key in _OPTIONAL_BOARD_KEYS:
         board.setdefault(key, None)
-    return board  # type: ignore[return-value]
+    return board  # type: ignore[return-value]  # dict -> Board TypedDict
 
 
 def _parse_firmware_file(filename: PathLike | str) -> Path:
@@ -311,9 +311,13 @@ def _assemble_args(
     family: str | None = None,
 ) -> list[str]:
     output = [_resolve_tycmd(), *args]
-    if any((port, serial, family)):
-        tag = '' if serial is None else str(serial)
-        tag += '' if family is None else f'-{family}'
-        tag += '' if port is None else f'@{port}'
+    if any(x is not None for x in (port, serial, family)):
+        tag = ''.join(
+            (
+                '' if serial is None else str(serial),
+                '' if family is None else f'-{family}',
+                '' if port is None else f'@{port}',
+            )
+        )
         output.append(f'--board={tag}')
     return output
