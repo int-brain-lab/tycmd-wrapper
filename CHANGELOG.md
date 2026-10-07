@@ -11,10 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - allow for filtering by board family
-- `Board` TypedDict describing the entries returned by `list_boards()`
 
 ### Changed
 
+- improved typehints
 - simplified workflow for publishing to PyPI
 
 ## [0.3.1] - 2026-09-27

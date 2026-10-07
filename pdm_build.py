@@ -18,10 +18,10 @@ MACOS_DEPLOYMENT_TARGET = '11.0'
 
 
 def _tycmd_version() -> str:
-    content = Path(__file__).parent.joinpath('tycmd.py').read_text()
+    content = Path(__file__).parent.joinpath('tycmd', '__init__.py').read_text()
     match = re.search(r"_TYCMD_VERSION = ['\"]([^'\"]+)['\"]", content)
     if match is None:
-        raise RuntimeError('Could not find _TYCMD_VERSION in tycmd.py')
+        raise RuntimeError('Could not find _TYCMD_VERSION in tycmd/__init__.py')
     return match.group(1)
 
 

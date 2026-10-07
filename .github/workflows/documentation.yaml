@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - 'docs/**'
-      - 'tycmd.py'
+      - 'tycmd/**'
 
 permissions:
   contents: write

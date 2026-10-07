@@ -23,10 +23,10 @@ build-backend = "pdm.backend"
 
 [tool.pdm.version]
 source = "file"
-path = "tycmd.py"
+path = "tycmd/__init__.py"
 
 [tool.pdm.build]
-includes = ["tycmd.py", "py.typed"]
+includes = ["tycmd"]
 source-includes = ["tests", "docs", "*.md"]
 excludes = [".gitignore", "docs/build"]
 run-setuptools = false
@@ -74,7 +74,7 @@ doc = [
 ]
 
 [tool.ruff]
-include = ["pyproject.toml", "tycmd.py", "tests/*.py"]
+include = ["pyproject.toml", "tycmd/*.py", "tests/*.py"]
 
 [tool.ruff.format]
 quote-style = "single"
@@ -89,7 +89,7 @@ extend-select = ["D"]
 convention = "numpy"
 
 [tool.mypy]
-files = ["tycmd.py"]
+files = ["tycmd"]
 
 [tool.pytest.ini_options]
 addopts    = "--cov=tycmd"
