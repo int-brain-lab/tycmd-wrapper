@@ -13,17 +13,17 @@ BLINK41_HEX = Path(__file__).parent.joinpath('blink41.hex').resolve()
 
 @pytest.fixture(autouse=True)
 def _clear_resolve_tycmd_cache():
-    # _resolve_tycmd is cached, so a real resolution from one test would otherwise leak into
-    # the next (e.g. into test__resolve_tycmd's own mocked scenarios).
+    # _resolve_tycmd is cached, so a real resolution from one test would otherwise leak
+    # into the next (e.g. into test__resolve_tycmd's own mocked scenarios).
     tycmd._resolve_tycmd.cache_clear()
     yield
     tycmd._resolve_tycmd.cache_clear()
 
 
 @pytest.fixture
-def mock_Popen():
-    with patch('tycmd.Popen', autospec=True) as mock_Popen:
-        context = mock_Popen.return_value.__enter__.return_value
+def mock_popen():
+    with patch('tycmd.Popen', autospec=True) as mock_popen:
+        context = mock_popen.return_value.__enter__.return_value
 
         def set_pipes(stdout: list[str] | None = None, stderr: list[str] | None = None):
             context.stdout = stdout if stdout is not None else []
@@ -36,48 +36,48 @@ def mock_Popen():
         def set_returncode(returncode: int = 0):
             context.returncode = returncode
 
-        mock_Popen.set_pipes = set_pipes
-        mock_Popen.set_returncode = set_returncode
-        mock_Popen.set_pipes([], [])
-        mock_Popen.set_returncode(0)
+        mock_popen.set_pipes = set_pipes
+        mock_popen.set_returncode = set_returncode
+        mock_popen.set_pipes([], [])
+        mock_popen.set_returncode(0)
 
-        yield mock_Popen
+        yield mock_popen
 
 
-def test_upload(mock_Popen, caplog):
-    mock_Popen.set_pipes(stdout=['output'])
+def test_upload(mock_popen, caplog):
+    mock_popen.set_pipes(stdout=['output'])
     caplog.set_level(logging.INFO)
     tycmd.upload(BLINK40_HEX, check=True, reset=True)
-    assert '--nocheck' not in mock_Popen.call_args[0][0]
-    assert '--noreset' not in mock_Popen.call_args[0][0]
-    assert '--rtc' in mock_Popen.call_args[0][0]
-    assert '--quiet' not in mock_Popen.call_args[0][0]
+    assert '--nocheck' not in mock_popen.call_args[0][0]
+    assert '--noreset' not in mock_popen.call_args[0][0]
+    assert '--rtc' in mock_popen.call_args[0][0]
+    assert '--quiet' not in mock_popen.call_args[0][0]
     assert len(caplog.records) > 0
     assert all(x.levelname == 'INFO' for x in caplog.records)
 
     caplog.clear()
     tycmd.upload(BLINK40_HEX, check=False, reset=False, log_level=logging.NOTSET)
-    assert '--nocheck' in mock_Popen.call_args[0][0]
-    assert '--noreset' in mock_Popen.call_args[0][0]
-    assert '--rtc' in mock_Popen.call_args[0][0]
-    assert '--quiet' in mock_Popen.call_args[0][0]
+    assert '--nocheck' in mock_popen.call_args[0][0]
+    assert '--noreset' in mock_popen.call_args[0][0]
+    assert '--rtc' in mock_popen.call_args[0][0]
+    assert '--quiet' in mock_popen.call_args[0][0]
     assert len(caplog.records) == 0
 
 
-def test_reset(mock_Popen, caplog):
-    mock_Popen.set_pipes(['status'], [])
+def test_reset(mock_popen, caplog):
+    mock_popen.set_pipes(['status'], [])
     caplog.set_level(logging.INFO)
     tycmd.reset(bootloader=True, log_level=logging.NOTSET)
-    mock_Popen.assert_called_once()
-    assert '--bootloader' in mock_Popen.call_args[0][0]
+    mock_popen.assert_called_once()
+    assert '--bootloader' in mock_popen.call_args[0][0]
     assert len(caplog.records) == 0
 
     tycmd.reset()
-    assert '--bootloader' not in mock_Popen.call_args[0][0]
+    assert '--bootloader' not in mock_popen.call_args[0][0]
     assert len(caplog.records) > 0
     assert all(x.levelname == 'INFO' for x in caplog.records)
 
-    mock_Popen.set_returncode(1)
+    mock_popen.set_returncode(1)
     with pytest.raises(ChildProcessError):
         tycmd.reset()
 
@@ -92,14 +92,14 @@ def test_identify():
     assert 'Teensy 4.1' in tycmd.identify(BLINK41_HEX)
 
 
-def test_list_boards(mock_Popen):
+def test_list_boards(mock_popen):
     stdout = (
         '[\n  {"action": "add", "tag": "12345678-Teensy", "serial": "12345678", '
         '"description": "USB Serial", "model": "Teensy 4.1", "location": "usb-3-3", '
         '"capabilities": ["unique", "run", "rtc", "reboot", "serial"], '
         '"interfaces": [["Serial", "/dev/ttyACM0"]]}\n]\n'
     )
-    mock_Popen.set_pipes([stdout], [])
+    mock_popen.set_pipes([stdout], [])
     output = tycmd.list_boards()
     assert isinstance(output, list)
     assert isinstance(output[0], dict)
@@ -110,13 +110,13 @@ def test_list_boards(mock_Popen):
         '[\n  {"action": "add", "tag": "12345678-Teensy", "model": "Teensy 4.1", '
         '"location": "usb-3-3", "capabilities": [], "interfaces": []}\n]\n'
     )
-    mock_Popen.set_pipes([stdout], [])
+    mock_popen.set_pipes([stdout], [])
     board = tycmd.list_boards()[0]
     assert board['serial'] is None
     assert board['description'] is None
     assert board['tag'] == '12345678-Teensy'
 
-    mock_Popen.set_pipes(['[\n]\n'], [])
+    mock_popen.set_pipes(['[\n]\n'], [])
     output = tycmd.list_boards()
     assert isinstance(output, list)
     assert len(output) == 0
@@ -147,14 +147,14 @@ def test__parse_firmware_file():
         assert tycmd._parse_firmware_file(str(firmware_file)).samefile(firmware_file)
 
 
-def test__call_tycmd(mock_Popen):
-    mock_Popen.set_pipes(['status'], ['error!'])
+def test__call_tycmd(mock_popen):
+    mock_popen.set_pipes(['status'], ['error!'])
     tycmd._call_tycmd([], raise_on_stderr=False)
     with pytest.raises(ChildProcessError):
         tycmd._call_tycmd([], raise_on_stderr=True)
 
-    mock_Popen.set_pipes(['status'], [])
-    mock_Popen.set_returncode(-1)
+    mock_popen.set_pipes(['status'], [])
+    mock_popen.set_returncode(-1)
     with pytest.raises(ChildProcessError):
         tycmd._call_tycmd([])
 
@@ -175,8 +175,9 @@ def test__assemble_args():
 
 
 def test__resolve_tycmd(tmp_path):
-    # _resolve_tycmd is cached (it's invariant for the life of the process), so each scenario
-    # below needs a fresh cache or it'd just keep returning the first call's result.
+    # _resolve_tycmd is cached (it's invariant for the life of the process), so each
+    # scenario below needs a fresh cache or it'd just keep returning the first call's
+    # result.
     with patch('tycmd.sysconfig.get_path', return_value=str(tmp_path)):
         # no binary at the expected "scripts" location -> falls back to a PATH lookup
         with patch('tycmd.shutil.which', return_value=None):
@@ -186,7 +187,8 @@ def test__resolve_tycmd(tmp_path):
             assert tycmd._resolve_tycmd() == '/usr/bin/tycmd'
         tycmd._resolve_tycmd.cache_clear()
 
-        # binary present at the expected "scripts" location -> used directly, no PATH lookup
+        # binary present at the expected "scripts" location -> used directly,
+        # no PATH lookup
         candidate = tmp_path / tycmd._TYCMD_NAME
         candidate.touch()
         with patch('tycmd.shutil.which') as mock_which:

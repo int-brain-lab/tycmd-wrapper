@@ -21,15 +21,16 @@ Family: TypeAlias = Literal['Teensy', 'Generic']
 RtcMode: TypeAlias = Literal['local', 'utc', 'none']
 """How to set the board's real-time clock on upload."""
 
-Capability: TypeAlias = Literal['unique', 'run', 'upload', 'reset', 'rtc', 'reboot', 'serial']
+Capability: TypeAlias = Literal[
+    'unique', 'run', 'upload', 'reset', 'rtc', 'reboot', 'serial'
+]
 """Something a board can do or be:
 
 - ``'unique'``: the serial number tells this board apart from others
 - ``'run'``: the board is running firmware
 - ``'upload'``: the board is in bootloader mode and accepts firmware uploads
 - ``'reset'``: the board is in bootloader mode and can be reset to start its firmware
-- ``'rtc'``: the board's real-time clock can be set when resetting after an upload (Teensy 4.0, 4.1
-  and MicroMod)
+- ``'rtc'``: the board's real-time clock can be set when resetting after an upload
 - ``'reboot'``: the running board can be rebooted into its bootloader
 - ``'serial'``: the board has a serial interface
 """
@@ -60,7 +61,10 @@ class Board(TypedDict):
     capabilities: list[Capability]
     """Capabilities of the board."""
     interfaces: list[list[str]]  # [name, path]
-    """Interfaces of the board as ``[name, path]`` pairs, e.g. ``['Serial', '/dev/ttyACM0']``."""
+    """Interfaces of the board as ``[name, path]`` pairs.
+
+    For example: ``['Serial', '/dev/ttyACM0']``.
+    """
     serial: str | None
     """Serial number of the board, or :py:obj:`None` if it does not report one."""
     description: str | None
@@ -77,7 +81,7 @@ def upload(
     reset: bool = True,
     rtc: RtcMode = 'local',
     log_level: int = logging.INFO,
-):
+) -> None:
     """
     Upload firmware to board. Status messages are logged.
 
@@ -141,7 +145,7 @@ def reset(
         args.append('--bootloader')
     if log_level == logging.NOTSET:
         args.append('--quiet')
-    _call_tycmd(args, serial=serial, port=port, log_level=log_level)
+    _call_tycmd(args, serial=serial, port=port, family=family, log_level=log_level)
 
 
 def identify(filename: PathLike | str) -> list[str]:
@@ -177,10 +181,10 @@ def list_boards(log_level: int = logging.NOTSET) -> list[Board]:
     Returns
     -------
     list[Board]
-        List of available boards. ``serial`` and ``description`` are :py:obj:`None` if the board does
-        not report them.
+        List of available boards. ``serial`` and ``description`` are :py:obj:`None`
+        if the board does not report them.
     """
-    output = _call_tycmd(['list', '-O', 'json', '-v'])
+    output = _call_tycmd(['list', '-O', 'json', '-v'], log_level=log_level)
     return [_normalize_board(board) for board in json.loads(output)]
 
 
@@ -202,15 +206,14 @@ def version() -> str:
     match = _RE_VERSION.search(output)
     if match is None:
         raise ChildProcessError('Could not determine tycmd version')
-    else:
-        return match.group()
+    return match.group()
 
 
 def _normalize_board(board: dict) -> Board:
     """Fill in the keys that tycmd omits when a board doesn't report them."""
     for key in _OPTIONAL_BOARD_KEYS:
         board.setdefault(key, None)
-    return cast(Board, board)
+    return cast('Board', board)
 
 
 def _parse_firmware_file(filename: PathLike | str) -> Path:
@@ -234,13 +237,13 @@ def _call_tycmd(
     log_level: int = logging.NOTSET,
 ) -> str:
     args = _assemble_args(args, serial=serial, family=family, port=port)
-    log.debug(f'Calling subprocess: {" ".join(args)}')
+    log.debug('Calling subprocess: %s', ' '.join(args))
 
     # Call tycmd
     with Popen(args, stdout=PIPE, stderr=PIPE, text=True, bufsize=1) as p:
         if log_level > logging.NOTSET:
-            assert p.stdout is not None
-            assert p.stderr is not None
+            assert p.stdout is not None  # noqa: S101
+            assert p.stderr is not None  # noqa: S101
             stdout_stream, stderr_stream = p.stdout, p.stderr
 
             stderr_chunks: list[str] = []
@@ -251,9 +254,9 @@ def _call_tycmd(
 
             stdout = ''
             for line in stdout_stream:
-                line = _RE_STRIP_TAG.sub('', line, count=1).strip()
-                log.log(level=log_level, msg=line)
-                stdout += line
+                stripped_line = _RE_STRIP_TAG.sub('', line, count=1).strip()
+                log.log(level=log_level, msg=stripped_line)
+                stdout += stripped_line
 
             stderr_thread.join()
             stderr = stderr_chunks[0]
