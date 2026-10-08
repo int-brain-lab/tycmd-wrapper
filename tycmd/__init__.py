@@ -165,15 +165,20 @@ def identify(filename: PathLike | str) -> list[str]:
     return output.get('models', [])
 
 
-def list_boards() -> list[Board]:
+def list_boards(log_level: int = logging.NOTSET) -> list[Board]:
     """
     List available boards.
+
+    Parameters
+    ----------
+    log_level : int, default: :py:data:`logging.NOTSET`
+        Log level.
 
     Returns
     -------
     list[Board]
-        List of available boards. ``serial``, ``description`` and ``public_key_hash`` are :py:obj:`None`
-        if the board does not report them.
+        List of available boards. ``serial`` and ``description`` are :py:obj:`None` if the board does
+        not report them.
     """
     output = _call_tycmd(['list', '-O', 'json', '-v'])
     return [_normalize_board(board) for board in json.loads(output)]
@@ -214,12 +219,8 @@ def _parse_firmware_file(filename: PathLike | str) -> Path:
         raise FileNotFoundError(filepath)
     if filepath.is_dir():
         raise IsADirectoryError(filepath)
-    if len(ext := filepath.suffixes) == 0 or ext[-1].lower() not in (
-        '.hex',
-        '.elf',
-        '.ehex',
-    ):
-        raise ValueError(f"Firmware '{filepath.name}' uses unrecognized extension")
+    if len(ext := filepath.suffixes) == 0 or ext[-1].lower() not in _VALID_FIRMWARE_EXT:
+        raise ValueError(f"'{filepath.name}' has unrecognized extension")
     return filepath
 
 
@@ -261,7 +262,7 @@ def _call_tycmd(
             stdout = _RE_STRIP_TAG.sub('', stdout).strip()
     stderr = _RE_STRIP_TAG.sub('', stderr).strip()
 
-    # Raise non-zero exit codes as a RuntimeError
+    # Raise non-zero exit codes as a ChildProcessError
     if p.returncode != 0:
         e = CalledProcessError(returncode=p.returncode, cmd=p.args)
         raise ChildProcessError(stderr) from e
