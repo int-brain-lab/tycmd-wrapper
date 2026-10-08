@@ -81,37 +81,14 @@ quote-style = "single"
 
 [tool.ruff.lint]
 extend-select = [
-  "A",
-  "ANN",
-  "ARG",
-  "C4",
-  "D",
-  "E",
-  "F",
-  "FA",
-  "FBT",
-  "FURB",
-  "G",
-  "I",
-  "ICN",
-  "ISC",
-  "LOG",
-  "N",
-  "PERF",
-  "PIE",
-  "PL",
-  "PTH",
-  "RET",
-  "RUF",
-  "S",
-  "SIM",
-  "SLF",
-  "T20",
-  "TID",
-  "TC",
-  "TRY",
-  "UP",
-  "W",
+  "A",   # flake8-builtins
+  "ANN", # flake8-annotations
+  "ARG", # flake8-unused-arguments
+  "FBT", # flake8-boolean-trap
+  "ICN", # flake8-import-conventions
+  "SLF", # flake8-self
+  "T20", # flake8-print
+  "TID", # flake8-tidy-imports
 ]
 ignore = [
   "PLR0913", "S603", "TRY003"
