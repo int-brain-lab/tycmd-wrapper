@@ -21,31 +21,16 @@ Family: TypeAlias = Literal['Teensy', 'Generic']
 RtcMode: TypeAlias = Literal['local', 'utc', 'none']
 """How to set the board's real-time clock on upload."""
 
-Capability: TypeAlias = Literal[
-    'unique',
-    'void',
-    'run',
-    'upload',
-    'encrypt',
-    'lock',
-    'locked',
-    'reset',
-    'rtc',
-    'reboot',
-    'serial',
-]
+Capability: TypeAlias = Literal['unique', 'run', 'upload', 'reset', 'rtc', 'reboot', 'serial']
 """Something a board can do or be:
 
 - ``'unique'``: the serial number tells this board apart from others
-- ``'void'``: the board is in a secured (HAB) state where a bootloader has to be sent first
 - ``'run'``: the board is running firmware
-- ``'upload'``: the board accepts firmware uploads
-- ``'encrypt'``: the board supports encrypted firmware
-- ``'lock'``: the board's encryption key can be locked
-- ``'locked'``: the board's encryption key is locked
-- ``'reset'``: the board can be reset
-- ``'rtc'``: the board's real-time clock can be set
-- ``'reboot'``: the board can be rebooted into its bootloader
+- ``'upload'``: the board is in bootloader mode and accepts firmware uploads
+- ``'reset'``: the board is in bootloader mode and can be reset to start its firmware
+- ``'rtc'``: the board's real-time clock can be set when resetting after an upload (Teensy 4.0, 4.1
+  and MicroMod)
+- ``'reboot'``: the running board can be rebooted into its bootloader
 - ``'serial'``: the board has a serial interface
 """
 
@@ -55,9 +40,10 @@ BoardAction: TypeAlias = Literal['add', 'change', 'miss', 'remove']
 __version__ = '0.3.1'
 _TYCMD_VERSION = '0.9.9'
 _TYCMD_NAME = 'tycmd.exe' if sys.platform == 'win32' else 'tycmd'
-_OPTIONAL_BOARD_KEYS = ('serial', 'description', 'public_key_hash')
+_OPTIONAL_BOARD_KEYS = ('serial', 'description')
 _RE_STRIP_TAG = re.compile(r'(^\s*\w+@\w+-\w+\s+)')  # match board tag
 _RE_VERSION = re.compile(r'\d+\.\d+\.\d+')  # match semantic version number
+_VALID_FIRMWARE_EXT = ('.hex', '.elf', '.ehex')
 
 
 class Board(TypedDict):
@@ -79,8 +65,6 @@ class Board(TypedDict):
     """Serial number of the board, or :py:obj:`None` if it does not report one."""
     description: str | None
     """Description of the board as reported by USB, or :py:obj:`None`."""
-    public_key_hash: str | None
-    """Hash of the public key used for encrypted firmware, or :py:obj:`None`."""
 
 
 def upload(
@@ -143,16 +127,12 @@ def reset(
     ----------
     serial : str, optional
         Serial number of targeted board.
-
     port : str, optional
         Port of targeted board.
-
     family : Family, optional
         Family of the targeted board.
-
     bootloader : bool, default: False
         Switch board to bootloader if True.
-
     log_level : int, default: :py:data:`logging.INFO`
         Log level.
     """

@@ -104,7 +104,6 @@ def test_list_boards(mock_Popen):
     assert isinstance(output, list)
     assert isinstance(output[0], dict)
     assert output[0]['serial'] == '12345678'
-    assert output[0]['public_key_hash'] is None
 
     # keys that tycmd omits are filled in with None
     stdout = (
@@ -115,7 +114,6 @@ def test_list_boards(mock_Popen):
     board = tycmd.list_boards()[0]
     assert board['serial'] is None
     assert board['description'] is None
-    assert board['public_key_hash'] is None
     assert board['tag'] == '12345678-Teensy'
 
     mock_Popen.set_pipes(['[\n]\n'], [])
