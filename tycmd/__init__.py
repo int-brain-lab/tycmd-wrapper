@@ -240,7 +240,9 @@ def _call_tycmd(
     log.debug('Calling subprocess: %s', ' '.join(args))
 
     # Call tycmd
-    with Popen(args, stdout=PIPE, stderr=PIPE, text=True, bufsize=1) as p:
+    with Popen(
+        args, stdout=PIPE, stderr=PIPE, encoding='utf-8', errors='replace', bufsize=1
+    ) as p:
         if log_level > logging.NOTSET:
             assert p.stdout is not None  # noqa: S101
             assert p.stderr is not None  # noqa: S101

@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -253,6 +254,23 @@ def test__call_tycmd_strips_tags(mock_popen, caplog):
         with pytest.raises(ChildProcessError) as exc_info:
             tycmd._call_tycmd([], log_level=log_level)
         assert str(exc_info.value) == 'First error\nSecond error'
+
+
+@pytest.mark.parametrize('log_level', [logging.NOTSET, logging.INFO])
+def test__call_tycmd_decoding(log_level):
+    # run a real subprocess (Python standing in for tycmd) that writes UTF-8 plus a byte
+    # that isn't valid UTF-8 to both stdout and stderr
+    script = (
+        'import sys; '
+        "sys.stdout.buffer.write(b'caf\\xc3\\xa9 M\\xfcller\\n'); "
+        "sys.stderr.buffer.write(b'caf\\xc3\\xa9 M\\xfcller\\n'); "
+        'sys.exit(int(sys.argv[1]))'
+    )
+    with patch('tycmd._resolve_tycmd', return_value=sys.executable):
+        output = tycmd._call_tycmd(['-c', script, '0'], log_level=log_level)
+        assert output.startswith('café M�ller')
+        with pytest.raises(ChildProcessError, match='café M�ller'):
+            tycmd._call_tycmd(['-c', script, '1'], log_level=log_level)
 
 
 def test__assemble_args():
