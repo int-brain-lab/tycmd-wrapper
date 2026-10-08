@@ -26,11 +26,12 @@ def mock_popen():
         context = mock_popen.return_value.__enter__.return_value
 
         def set_pipes(stdout: list[str] | None = None, stderr: list[str] | None = None):
-            context.stdout = stdout if stdout is not None else []
-            context.stderr = stderr if stderr is not None else []
+            # like real pipes, iterating yields lines that end with a newline
+            context.stdout = [f'{line}\n' for line in stdout or []]
+            context.stderr = [f'{line}\n' for line in stderr or []]
             context.communicate.return_value = (
-                '\n'.join(context.stdout),
-                '\n'.join(context.stderr),
+                ''.join(context.stdout),
+                ''.join(context.stderr),
             )
 
         def set_returncode(returncode: int = 0):
@@ -147,6 +148,68 @@ def test__parse_firmware_file():
         assert tycmd._parse_firmware_file(str(firmware_file)).samefile(firmware_file)
 
 
+@pytest.mark.parametrize(
+    ('line', 'expected'),
+    [
+        # task messages, prefixed with '<task>@<board tag>' right-aligned to 28 chars
+        (
+            "       reset@11383920-Teensy  Resetting board '11383920-Teensy'",
+            "Resetting board '11383920-Teensy'",
+        ),
+        (
+            '             upload@?-Teensy  Uploading...',
+            'Uploading...',
+        ),
+        (
+            '     reset@12345678-Teensy@1  Sending reset command',
+            'Sending reset command',
+        ),
+        (
+            '  reset@ABC123-Arduino LLC  Cannot reset board',
+            'Cannot reset board',
+        ),
+        (
+            'upload@123456789012-Teensy  Board  is  busy',
+            'Board  is  busy',
+        ),
+        # untagged output is left alone
+        (
+            "Board 'nope' not found",
+            "Board 'nope' not found",
+        ),
+        (
+            "Board 'foo@bar'  not found",
+            "Board 'foo@bar'  not found",
+        ),
+        (
+            'tycmd 0.9.9',
+            'tycmd 0.9.9',
+        ),
+        (
+            '  {"action": "add", "tag": "1-Teensy@1"}',
+            '  {"action": "add", "tag": "1-Teensy@1"}',
+        ),
+    ],
+)
+def test__re_strip_tag(line, expected):
+    assert tycmd._RE_STRIP_TAG.sub('', line) == expected
+
+
+def test__re_strip_tag_multiline():
+    output = (
+        "       reset@11383920-Teensy  Resetting board '11383920-Teensy' (Teensy 3.1)\n"
+        '       reset@11383920-Teensy  Triggering board reboot\n'
+        '\n'
+        '       reset@11383920-Teensy  Sending reset command\n'
+    )
+    assert tycmd._RE_STRIP_TAG.sub('', output) == (
+        "Resetting board '11383920-Teensy' (Teensy 3.1)\n"
+        'Triggering board reboot\n'
+        '\n'
+        'Sending reset command\n'
+    )
+
+
 def test__call_tycmd(mock_popen):
     mock_popen.set_pipes(['status'], ['error!'])
     tycmd._call_tycmd([], raise_on_stderr=False)
@@ -157,6 +220,39 @@ def test__call_tycmd(mock_popen):
     mock_popen.set_returncode(-1)
     with pytest.raises(ChildProcessError):
         tycmd._call_tycmd([])
+
+
+def test__call_tycmd_strips_tags(mock_popen, caplog):
+    stdout = [
+        "       reset@11383920-Teensy  Resetting board '11383920-Teensy' (Teensy 3.1)",
+        '       reset@11383920-Teensy  Sending reset command',
+    ]
+    stderr = [
+        '       reset@11383920-Teensy  First error',
+        '       reset@11383920-Teensy  Second error',
+    ]
+
+    # without logging: every line is stripped, not just the first one
+    mock_popen.set_pipes(stdout, [])
+    assert tycmd._call_tycmd([]) == (
+        "Resetting board '11383920-Teensy' (Teensy 3.1)\nSending reset command"
+    )
+
+    # with logging: each line is logged without its tag
+    caplog.set_level(logging.INFO)
+    tycmd._call_tycmd([], log_level=logging.INFO)
+    assert [r.getMessage() for r in caplog.records] == [
+        "Resetting board '11383920-Teensy' (Teensy 3.1)",
+        'Sending reset command',
+    ]
+
+    # error messages are stripped as well, on every line
+    mock_popen.set_pipes([], stderr)
+    mock_popen.set_returncode(1)
+    for log_level in (logging.NOTSET, logging.INFO):
+        with pytest.raises(ChildProcessError) as exc_info:
+            tycmd._call_tycmd([], log_level=log_level)
+        assert str(exc_info.value) == 'First error\nSecond error'
 
 
 def test__assemble_args():

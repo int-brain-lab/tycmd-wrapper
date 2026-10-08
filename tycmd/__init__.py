@@ -42,7 +42,7 @@ __version__ = '0.3.1'
 _TYCMD_VERSION = '0.9.9'
 _TYCMD_NAME = 'tycmd.exe' if sys.platform == 'win32' else 'tycmd'
 _OPTIONAL_BOARD_KEYS = ('serial', 'description')
-_RE_STRIP_TAG = re.compile(r'(^\s*\w+@\w+-\w+\s+)')  # match board tag
+_RE_STRIP_TAG = re.compile(r'^[ \t]*\w+@.+? {2}', re.MULTILINE)
 _RE_VERSION = re.compile(r'\d+\.\d+\.\d+')  # match semantic version number
 _VALID_FIRMWARE_EXT = ('.hex', '.elf', '.ehex')
 
