@@ -57,7 +57,7 @@ Building the documentation
 ---------------------------
 
 ```shell
-uv run sphinx-build -b dirhtml ./docs/source ./docs/build
+uv run sphinx-build -b dirhtml docs/source docs/build
 ```
 
 Building the package
