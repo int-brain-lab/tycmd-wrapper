@@ -28,7 +28,9 @@ def _tycmd_version() -> str:
 def _check_version(binary: Path, version: str) -> None:
     result = subprocess.check_output([str(binary), '--version'], text=True, timeout=30)
     if version not in result.split():
-        raise RuntimeError(f'{binary} reports unexpected version: {result.strip()!r} (expected {version!r})')
+        raise RuntimeError(
+            f'{binary} reports unexpected version: {result.strip()!r} (expected {version!r})'
+        )
 
 
 def build_tycmd(output_dir: Path) -> Path:
@@ -47,19 +49,29 @@ def build_tycmd(output_dir: Path) -> Path:
         # find tag
         src = Path(tmp, 'rygel')
         try:
-            result = subprocess.check_output(['git', 'ls-remote', '--tags', REPO_URL, 'tytools*'], text=True, cwd=tmp)
-            tags = [ref.split("\t", 1)[1].removeprefix("refs/tags/") for ref in result.splitlines()]
+            result = subprocess.check_output(
+                ['git', 'ls-remote', '--tags', REPO_URL, 'tytools*'], text=True, cwd=tmp
+            )
+            tags = [
+                ref.split('\t', 1)[1].removeprefix('refs/tags/')
+                for ref in result.splitlines()
+            ]
             tag = next(t for t in tags if 'tytools/' in t and t.endswith(f'/{version}'))
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f'Could not list git tags for {REPO_URL}') from e
         except StopIteration as e:
-            raise RuntimeError(f'Could not find git tag matching tycmd {version} in {REPO_URL}') from e
+            raise RuntimeError(
+                f'Could not find git tag matching tycmd {version} in {REPO_URL}'
+            ) from e
 
         # clone rygel
         try:
-            subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', tag, REPO_URL, str(src)], cwd=tmp)
+            subprocess.check_call(
+                ['git', 'clone', '--depth', '1', '--branch', tag, REPO_URL, str(src)],
+                cwd=tmp,
+            )
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f'Could not clone rygel') from e
+            raise RuntimeError('Could not clone rygel') from e
 
         # build tycmd
         try:
@@ -69,7 +81,9 @@ def build_tycmd(output_dir: Path) -> Path:
             build_env = os.environ.copy()
             if system() == 'Darwin':
                 build_env['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
-            subprocess.check_call([str(felix), '-pFast', 'tycmd'], cwd=src, env=build_env)
+            subprocess.check_call(
+                [str(felix), '-pFast', 'tycmd'], cwd=src, env=build_env
+            )
             built = next(src.joinpath('bin').rglob(TYCMD_NAME))
         except StopIteration as e:
             raise FileNotFoundError('Could not find built tycmd binary') from e
@@ -96,12 +110,12 @@ def _ensure_tycmd(output_dir: Path) -> Path:
         try:
             _check_version(existing, version)
             return existing
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError, RuntimeError) as e:
             print(f'{existing} is stale or broken ({e!r}), rebuilding...')
     return build_tycmd(output_dir)
 
 
-def pdm_build_initialize(context: Context):
+def pdm_build_initialize(context: Context) -> None:
     if context.target == 'sdist':
         return
     context.config_settings['--python-tag'] = 'py3'
@@ -114,14 +128,15 @@ def pdm_build_initialize(context: Context):
     output_dir = Path(__file__).parent / 'bin'
     tycmd = _ensure_tycmd(output_dir)
 
-    wheel_data = context.config.build_config.get("wheel-data", dict())
-    wheel_data["scripts"] = [
+    wheel_data = context.config.build_config.get('wheel-data', {})
+    wheel_data['scripts'] = [
         {
-            "path": str(tycmd.relative_to(Path(__file__).parent)),
-            "relative-to": str(tycmd.parent),
+            'path': str(tycmd.relative_to(Path(__file__).parent)),
+            'relative-to': str(tycmd.parent),
         }
     ]
-    context.config.build_config["wheel-data"] = wheel_data
+    context.config.build_config['wheel-data'] = wheel_data
+
 
 if __name__ == '__main__':
     _ensure_tycmd(Path('bin'))

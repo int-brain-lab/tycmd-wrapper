@@ -1,4 +1,5 @@
 from datetime import date
+
 from tycmd import __version__
 
 # -- Project information -----------------------------------------------------
@@ -41,5 +42,5 @@ html_theme_options = {
     'sticky_navigation': True,
     'navigation_depth': 2,
     'includehidden': True,
-    'titles_only': False
+    'titles_only': False,
 }

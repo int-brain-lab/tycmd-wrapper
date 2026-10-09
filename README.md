@@ -29,6 +29,7 @@ To identify which models are compatible with a specific firmware file, use the `
 
 ```python
 import tycmd
+
 compatible_models = tycmd.identify('blink.hex')
 ```
 
@@ -42,6 +43,7 @@ To list all available boards, use the `list_boards()` function.
 
 ```python
 import tycmd
+
 boards = tycmd.list_boards()
 ```
 

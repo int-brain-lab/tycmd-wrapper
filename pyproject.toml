@@ -73,9 +73,6 @@ doc = [
   "myst-parser>=3.0.1",
 ]
 
-[tool.ruff]
-include = ["pyproject.toml", "tycmd/*.py", "tests/*.py"]
-
 [tool.ruff.format]
 quote-style = "single"
 
@@ -95,6 +92,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"docs/source/conf.py" = ["A001", "DTZ011"]  # names and values required by Sphinx
+"pdm_build.py" = ["T201"]  # progress messages of the build hook
 "tests/*.py" = ["ANN", "D", "S101", "SLF001"]
 
 [tool.ruff.lint.pydocstyle]
