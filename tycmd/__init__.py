@@ -94,9 +94,14 @@ def upload(
     """
     Upload firmware to a board.
 
+    Unless ``check`` is False, tycmd first checks that the firmware is compatible with
+    the board. It then reboots the board into its bootloader if needed, uploads the
+    firmware and, unless ``reset`` is False, resets the board to start it. Without
+    ``serial`` and ``port``, the first board detected is used.
+
     Parameters
     ----------
-    filename : PathLike or str
+    filename : PathLike | str
         Path to the firmware file.
     serial : str, optional
         Serial number of the board.
@@ -109,7 +114,8 @@ def upload(
     rtc : RtcMode, default: 'local'
         Set the board's real-time clock, if it has one: 'local', 'utc' or 'none'.
     log_level : int, default: :py:data:`logging.INFO`
-        Log level for tycmd's status messages.
+        Log level for tycmd's status messages, :py:data:`logging.NOTSET` to disable.
+        Warnings are always logged as such.
 
     Raises
     ------
@@ -121,6 +127,21 @@ def upload(
         If the firmware file has an unsupported extension or ``rtc`` is invalid.
     TycmdError
         If tycmd fails.
+
+    Warnings
+    --------
+    If the board can't be rebooted into its bootloader, tycmd waits until the board's
+    button is pressed. This is logged as a warning.
+
+    Examples
+    --------
+    Upload to the board on a specific port:
+
+    >>> tycmd.upload('blink.hex', port='/dev/ttyACM0')
+
+    Upload to the board with a specific serial number, without resetting it:
+
+    >>> tycmd.upload('blink.hex', serial='14014980', reset=False)
     """
     if rtc not in (rtc_modes := get_args(RtcMode)):
         raise ValueError(f'rtc must be one of {", ".join(rtc_modes)}, not {rtc!r}')
@@ -144,6 +165,10 @@ def reset(
     """
     Reset a board.
 
+    A running board is first rebooted into its bootloader, then reset to start its
+    firmware. With ``bootloader``, it is only rebooted into its bootloader. Without
+    ``serial`` and ``port``, the first board detected is used.
+
     Parameters
     ----------
     serial : str, optional
@@ -153,12 +178,23 @@ def reset(
     bootloader : bool, default: False
         Reboot into the bootloader instead.
     log_level : int, default: :py:data:`logging.INFO`
-        Log level for tycmd's status messages.
+        Log level for tycmd's status messages, :py:data:`logging.NOTSET` to disable.
+        Warnings are always logged as such.
 
     Raises
     ------
     TycmdError
         If tycmd fails.
+
+    Examples
+    --------
+    Restart the firmware of the board with a specific serial number:
+
+    >>> tycmd.reset(serial='14014980')
+
+    Reboot it into its bootloader instead:
+
+    >>> tycmd.reset(serial='14014980', bootloader=True)
     """
     args = ['reset']
     if bootloader:
@@ -170,15 +206,17 @@ def identify(filename: PathLike | str) -> list[str]:
     """
     Identify the board models compatible with a firmware file.
 
+    Only the file is inspected - no board needs to be connected.
+
     Parameters
     ----------
-    filename : PathLike or str
+    filename : PathLike | str
         Path to the firmware file.
 
     Returns
     -------
     list[str]
-        Compatible models, e.g. ``['Teensy 4.0', 'Teensy 4.0 (beta 1)']``.
+        Names of the compatible models, empty if there are none.
 
     Raises
     ------
@@ -191,6 +229,13 @@ def identify(filename: PathLike | str) -> list[str]:
         tycmd's output can't be parsed (e.g. if the filename contains ``"``).
     TycmdError
         If tycmd fails.
+
+    Examples
+    --------
+    List the models a firmware file is compatible with:
+
+    >>> tycmd.identify('blink.hex')
+    ['Teensy 4.0', 'Teensy 4.0 (beta 1)']
     """
     filename = str(_parse_firmware_file(filename))
     json_str = _call_tycmd(['identify', filename, '--json'])
@@ -213,6 +258,8 @@ def list_boards() -> list[Board]:
     """
     List the available boards.
 
+    Includes boards in bootloader mode. See :class:`Board` for the details reported.
+
     Returns
     -------
     list[Board]
@@ -222,6 +269,13 @@ def list_boards() -> list[Board]:
     ------
     TycmdError
         If tycmd fails.
+
+    Examples
+    --------
+    Get the serial numbers of all available boards:
+
+    >>> [board['serial'] for board in tycmd.list_boards()]
+    ['3576040', '14014980']
     """
     output = _call_tycmd(['list', '-O', 'json', '-v'])
     return [_normalize_board(board) for board in json.loads(output)]
@@ -240,6 +294,13 @@ def version() -> str:
     ------
     RuntimeError
         If the version can't be determined.
+
+    Examples
+    --------
+    Check the version of the bundled tycmd binary:
+
+    >>> tycmd.version()
+    '0.9.9'
     """
     try:
         output = _call_tycmd(['--version'])
@@ -297,10 +358,10 @@ def _call_tycmd(
         try:
             _consume_pipe(p.stdout, stdout_lines, log_level)
         except BaseException:
-            p.kill()  # tycmd might never exit on its own, e.g. waiting for a button press
+            p.kill()  # tycmd may never exit on its own, e.g. awaiting a button press
             raise
         finally:
-            stderr_thread.join()  # before leaving the with-block, which closes the pipes
+            stderr_thread.join()  # before the with-block closes the pipes
     stdout = '\n'.join(stdout_lines).strip()
     stderr = '\n'.join(stderr_lines).strip()
 

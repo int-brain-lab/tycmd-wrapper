@@ -8,6 +8,11 @@ on:
     paths:
       - 'docs/**'
       - 'tycmd/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'pyproject.toml'
+      - 'uv.lock'
 
 permissions:
   contents: write

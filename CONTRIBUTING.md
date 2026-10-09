@@ -20,9 +20,9 @@ Building tycmd
 --------------
 
 The bundled `tycmd` binary isn't committed to this repository - it's built from source
-automatically whenever it's needed (e.g. by `uv sync`, `uv build`, or `uv run tox`), the first
-time and whenever `tycmd/__init__.py`/`pdm_build.py` change. Building it requires `git` and a C++
-compiler; on Linux you'll also need `libudev-dev`.
+automatically whenever it's needed (e.g. by `uv sync`, `uv build`, or `uv run tox`): the first
+time, and again whenever the pinned version (`_TYCMD_VERSION` in `tycmd/__init__.py`) changes.
+Building it requires `git` and a C++ compiler; on Linux you'll also need `libudev-dev`.
 
 Running the test suite
 -----------------------
