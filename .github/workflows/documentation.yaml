@@ -15,11 +15,21 @@ on:
       - 'uv.lock'
 
 permissions:
-  contents: write
+  contents: read
+  pages: write  # deploy to GitHub Pages
+  id-token: write  # verify the deployment's origin
+
+# don't let two deployments overlap, but let a running one finish
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   docs:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -29,12 +39,9 @@ jobs:
       - uses: ./.github/actions/ensure-tycmd
         with:
           cache-key-os: ubuntu-latest
-      - name: Sphinx build
-        run: uv run sphinx-build -b dirhtml docs/source docs/build
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - run: uv run sphinx-build -b dirhtml docs/source docs/build
+      - uses: actions/upload-pages-artifact@v5
         with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/build/
-          force_orphan: true
+          path: docs/build/
+      - id: deployment
+        uses: actions/deploy-pages@v5
