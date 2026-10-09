@@ -198,6 +198,21 @@ class TestVersion:
         ):
             tycmd.version()
 
+    @pytest.mark.parametrize(
+        'error',
+        [
+            tycmd.TycmdError(1, ['tycmd', '--version'], stderr='crashed'),
+            FileNotFoundError('Could not find the tycmd binary'),
+        ],
+    )
+    def test_version_tycmd_error(self, error):
+        """Errors from running tycmd are raised as they are."""
+        with (
+            patch('tycmd._call_tycmd', side_effect=error),
+            pytest.raises(type(error)),
+        ):
+            tycmd.version()
+
 
 class TestParseFirmwareFile:
     def test_parse_firmware_file(self, tmp_path):
@@ -239,6 +254,15 @@ class TestParseFirmwareFile:
         (firmware_file := tmp_path / name).touch()
         with pytest.raises(ValueError, match=r'unrecognized extension \(supported: '):
             tycmd._parse_firmware_file(firmware_file)
+
+    @pytest.mark.skipif(sys.platform == 'win32', reason='symlinks need privileges')
+    def test_parse_firmware_file_symlink(self, tmp_path):
+        """Symlinks are checked and passed on by their own name, not their target's."""
+        target = tmp_path / 'blob'
+        target.write_bytes(BLINK40_HEX.read_bytes())
+        (link := tmp_path / 'link.hex').symlink_to(target)
+        assert tycmd._parse_firmware_file(link) == link
+        assert 'Teensy 4.0' in tycmd.identify(link)
 
 
 class TestReStripTag:
@@ -323,7 +347,7 @@ class TestCallTycmd:
         assert exc_info.value.stderr == 'error!'
 
     def test_call_tycmd_strips_tags(self, mock_popen, caplog):
-        """Tags are stripped from every line of stdout, stderr and log messages."""
+        """Tags are stripped from log and error messages, but not from returned data."""
         stdout = [
             (
                 "       reset@11383920-Teensy  Resetting board '11383920-Teensy' "
@@ -336,11 +360,11 @@ class TestCallTycmd:
             '       reset@11383920-Teensy  Second error',
         ]
 
-        # without logging: every line is stripped, not just the first one
+        # the output is returned as is: it may be data, e.g. JSON with a filename that
+        # contains a newline followed by something that looks like a tag
+        mock_popen.set_pipes([*stdout, 'upload@x  not a tag'], [])
+        assert tycmd._call_tycmd([]) == '\n'.join([*stdout, 'upload@x  not a tag'])
         mock_popen.set_pipes(stdout, [])
-        assert tycmd._call_tycmd([]) == (
-            "Resetting board '11383920-Teensy' (Teensy 3.1)\nSending reset command"
-        )
 
         # with logging: each line is logged without its tag
         caplog.set_level(logging.INFO)
@@ -350,13 +374,14 @@ class TestCallTycmd:
             'Sending reset command',
         ]
 
-        # error messages are stripped as well, on every line
+        # the error message is stripped on every line, stderr is kept as is
         mock_popen.set_pipes([], stderr)
         mock_popen.set_returncode(1)
         for log_level in (logging.NOTSET, logging.INFO):
             with pytest.raises(tycmd.TycmdError) as exc_info:
                 tycmd._call_tycmd([], log_level=log_level)
-            assert exc_info.value.stderr == 'First error\nSecond error'
+            assert str(exc_info.value) == 'First error\nSecond error'
+            assert exc_info.value.stderr == '\n'.join(stderr)
 
     def test_call_tycmd_decoding(self):
         """Output is decoded as UTF-8, with invalid bytes replaced."""
@@ -396,7 +421,7 @@ class TestCallTycmd:
         outputs = [
             tycmd._call_tycmd([], log_level=x) for x in (logging.NOTSET, logging.INFO)
         ]
-        assert outputs[0] == outputs[1] == '\n'.join(line.strip() for line in stdout)
+        assert outputs[0] == outputs[1] == '\n'.join(stdout)
 
         boards = tycmd.list_boards()
         assert boards[0]['tag'] == '11383920-Teensy'
@@ -441,7 +466,7 @@ class TestCallTycmd:
         mock_popen.set_returncode(1)
         with pytest.raises(tycmd.TycmdError) as exc_info:
             tycmd._call_tycmd([])
-        assert exc_info.value.stderr == 'Some warning'
+        assert str(exc_info.value) == 'Some warning'
         assert records() == [(logging.WARNING, 'Some warning')]
 
     @pytest.mark.parametrize('log_level', [logging.NOTSET, logging.INFO, logging.ERROR])
@@ -483,6 +508,25 @@ class TestCallTycmd:
         assert time.monotonic() - start < 30
         assert threading.active_count() == threads_before
 
+    def test_call_tycmd_stderr_error(self):
+        """An error while reading stderr kills tycmd and is raised to the caller."""
+        # a child that fills the stderr pipe and then waits, so it would block forever
+        # if stderr wasn't read anymore
+        script = (
+            "import sys, time; sys.stderr.write('x' * 300_000 + '\\n'); "
+            'sys.stderr.flush(); time.sleep(60)'
+        )
+        threads_before = threading.active_count()
+        start = time.monotonic()
+        with (
+            patch('tycmd._resolve_tycmd', return_value=sys.executable),
+            patch.object(tycmd.log, 'log', side_effect=RuntimeError('handler failed')),
+            pytest.raises(RuntimeError, match='handler failed'),
+        ):
+            tycmd._call_tycmd([*PYTHON_ARGS, script])
+        assert time.monotonic() - start < 30
+        assert threading.active_count() == threads_before
+
 
 class TestAssembleArgs:
     def test_assemble_args(self):
@@ -499,6 +543,15 @@ class TestAssembleArgs:
         assert '-B' not in output
         assert Path(output[0]).name == tycmd._TYCMD_NAME
         assert 'some_argument' in output
+
+    def test_assemble_args_numeric_serial(self):
+        """A serial number given as int is converted to a string."""
+        assert '--board=14014980' in tycmd._assemble_args(args=[], serial=14014980)
+
+    def test_assemble_args_empty_values(self):
+        """Empty values don't add a board filter."""
+        output = tycmd._assemble_args(args=[], serial='', port='', family='')
+        assert not any(arg.startswith('--board') for arg in output)
 
 
 def _record_entry(path: Path) -> SimpleNamespace:

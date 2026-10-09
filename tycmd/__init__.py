@@ -36,7 +36,7 @@ Capability: TypeAlias = Literal[
 BoardAction: TypeAlias = Literal['add', 'change', 'miss', 'remove']
 """Event that produced a board entry."""
 
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 """Version of tycmd-wrapper."""
 _TYCMD_VERSION = '0.9.9'
 """Version of the bundled tycmd binary."""
@@ -57,7 +57,9 @@ class TycmdError(CalledProcessError):
 
     def __str__(self) -> str:
         """Return tycmd's error message, or the exit status if there is none."""
-        return self.stderr or super().__str__()
+        lines = (self.stderr or '').splitlines()
+        message = '\n'.join(_strip_tag(line) for line in lines).strip()
+        return message or super().__str__()
 
 
 class Board(TypedDict):
@@ -293,7 +295,9 @@ def version() -> str:
     Raises
     ------
     RuntimeError
-        If the version can't be determined.
+        If the version can't be determined from tycmd's output.
+    TycmdError
+        If tycmd fails.
 
     Examples
     --------
@@ -302,10 +306,10 @@ def version() -> str:
     >>> tycmd.version()
     '0.9.9'
     """
+    output = _call_tycmd(['--version'])
     try:
-        output = _call_tycmd(['--version'])
         _, tycmd_version = output.split(maxsplit=1)
-    except Exception as e:
+    except ValueError as e:
         raise RuntimeError('Could not determine the version of tycmd') from e
     return tycmd_version
 
@@ -318,8 +322,9 @@ def _normalize_board(board: dict) -> Board:
 
 
 def _parse_firmware_file(filename: PathLike | str) -> Path:
-    """Return the resolved path of a firmware file, or raise if it's not usable."""
-    filepath = Path(filename).resolve()
+    """Return the absolute path of a firmware file, or raise if it's not usable."""
+    # tycmd detects the format from the file name, so symlinks must not be resolved
+    filepath = Path(filename).absolute()
     if not filepath.exists():
         raise FileNotFoundError(errno.ENOENT, strerror(errno.ENOENT), str(filepath))
     if filepath.is_dir():
@@ -342,28 +347,33 @@ def _call_tycmd(
 ) -> str:
     """Run tycmd, log its output and return its stdout."""
     args = _assemble_args(args, serial=serial, port=port, family=family)
-    log.debug('Calling subprocess: %s', shlex.join(args))
+    if log.isEnabledFor(logging.DEBUG):
+        log.debug('Calling subprocess: %s', shlex.join(args))
 
     # stdout (status messages) is logged at log_level, stderr (warnings and errors) at
     # WARNING - stderr is read in a thread, so neither pipe can fill up and block tycmd
     stdout_lines: list[str] = []
     stderr_lines: list[str] = []
+    stderr_errors: list[Exception] = []
     with Popen(args, stdout=PIPE, stderr=PIPE, encoding='utf-8', errors='replace') as p:
         assert p.stdout is not None
         assert p.stderr is not None
         stderr_thread = Thread(
-            target=partial(_consume_pipe, p.stderr, stderr_lines, logging.WARNING)
+            target=partial(_consume_stderr, p, p.stderr, stderr_lines, stderr_errors),
+            daemon=True,  # in case joining it after an error is interrupted, too
         )
         stderr_thread.start()
         try:
             _consume_pipe(p.stdout, stdout_lines, log_level)
+            stderr_thread.join()  # before the with-block closes the pipes
         except BaseException:
             p.kill()  # tycmd may never exit on its own, e.g. awaiting a button press
+            stderr_thread.join()
             raise
-        finally:
-            stderr_thread.join()  # before the with-block closes the pipes
-    stdout = '\n'.join(stdout_lines).strip()
-    stderr = '\n'.join(stderr_lines).strip()
+    if stderr_errors:
+        raise stderr_errors[0]
+    stdout = '\n'.join(stdout_lines)
+    stderr = '\n'.join(stderr_lines)
 
     if p.returncode != 0:
         raise TycmdError(p.returncode, p.args, output=stdout, stderr=stderr)
@@ -371,16 +381,31 @@ def _call_tycmd(
 
 
 def _consume_pipe(stream: IO[str], lines: list[str], log_level: int) -> None:
-    """Strip, collect and log each line - button prompts always at WARNING."""
+    """Collect each line as is and log it without tag - button prompts at WARNING."""
     for line in stream:
-        stripped_line = _RE_STRIP_TAG.sub('', line).strip()
-        lines.append(stripped_line)
-        if not stripped_line:
+        lines.append(line.rstrip('\n'))
+        if not (message := _strip_tag(line)):
             continue
-        if _RE_USER_ACTION.search(stripped_line):
-            log.warning(stripped_line)
+        if _RE_USER_ACTION.search(message):
+            log.warning(message)
         elif log_level > logging.NOTSET:
-            log.log(log_level, stripped_line)
+            log.log(log_level, message)
+
+
+def _strip_tag(line: str) -> str:
+    """Return a line of tycmd's output without its task tag and surrounding space."""
+    return _RE_STRIP_TAG.sub('', line).strip()
+
+
+def _consume_stderr(
+    process: Popen[str], stream: IO[str], lines: list[str], errors: list[Exception]
+) -> None:
+    """Consume stderr in a thread - on failure, kill tycmd and keep the error."""
+    try:
+        _consume_pipe(stream, lines, logging.WARNING)
+    except Exception as e:  # noqa: BLE001 - re-raised by _call_tycmd
+        errors.append(e)
+        process.kill()  # otherwise, tycmd might block on a full stderr pipe
 
 
 @cache
@@ -410,13 +435,13 @@ def _assemble_args(
 ) -> list[str]:
     """Return the tycmd command line, with a ``--board`` tag if a board is given."""
     output = [_resolve_tycmd(), *args]
-    if any(x is not None for x in (serial, port, family)):
-        tag = ''.join(
-            (
-                '' if serial is None else serial,
-                '' if family is None else f'-{family}',
-                '' if port is None else f'@{port}',
-            )
+    tag = ''.join(
+        (
+            str(serial or ''),
+            f'-{family}' if family else '',
+            f'@{port}' if port else '',
         )
+    )
+    if tag:
         output.append(f'--board={tag}')
     return output

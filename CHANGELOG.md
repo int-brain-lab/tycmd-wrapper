@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-09
+
 ### Added
 
 - `TycmdError`, a `subprocess.CalledProcessError` raised whenever tycmd fails - its message is
@@ -102,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 _First release._
 
 
-[Unreleased]: https://github.com/int-brain-lab/tycmd-wrapper/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/int-brain-lab/tycmd-wrapper/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/int-brain-lab/tycmd-wrapper/releases/tag/v0.4.0
 [0.3.1]: https://github.com/int-brain-lab/tycmd-wrapper/releases/tag/v0.3.1
 [0.3.0]: https://github.com/int-brain-lab/tycmd-wrapper/releases/tag/v0.3.0
 [0.2.1]: https://github.com/int-brain-lab/tycmd-wrapper/releases/tag/v0.2.1
