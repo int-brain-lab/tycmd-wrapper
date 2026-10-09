@@ -92,20 +92,18 @@ extend-select = [
   "A",   # flake8-builtins
   "ANN", # flake8-annotations
   "ARG", # flake8-unused-arguments
+  "D",   # pydocstyle
   "FBT", # flake8-boolean-trap
   "ICN", # flake8-import-conventions
   "SLF", # flake8-self
   "T20", # flake8-print
   "TID", # flake8-tidy-imports
 ]
-ignore = [
-  "PLR0913", "S603", "TRY003"
-]
 
 [tool.ruff.lint.per-file-ignores]
 "docs/source/conf.py" = ["A001", "DTZ011"]  # names and values required by Sphinx
 "pdm_build.py" = ["T201"]  # progress messages of the build hook
-"tests/*.py" = ["ANN", "D", "S101", "SLF001"]
+"tests/*.py" = ["ANN", "D", "SLF001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

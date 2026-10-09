@@ -44,7 +44,7 @@ _TYCMD_NAME = 'tycmd.exe' if sys.platform == 'win32' else 'tycmd'
 """File name of the tycmd binary."""
 _OPTIONAL_BOARD_KEYS = ('serial', 'description')
 """Keys of :class:`Board` that tycmd omits if a board doesn't report them."""
-_RE_STRIP_TAG = re.compile(r'^[ \t]*\w+@.+? {2}', re.MULTILINE)
+_RE_STRIP_TAG = re.compile(r'^[ \t]*\w+@.+? {2}')
 """Matches the ``<task>@<board tag>`` prefix of tycmd's task messages."""
 _RE_USER_ACTION = re.compile(r'\bpress button\b', re.IGNORECASE)
 """Matches status messages asking the user to press the board's button."""

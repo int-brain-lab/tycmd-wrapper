@@ -1,3 +1,5 @@
+"""pdm-backend build hook that bundles the tycmd binary with the wheel."""
+
 from __future__ import annotations
 
 import os
@@ -116,6 +118,7 @@ def _ensure_tycmd(output_dir: Path) -> Path:
 
 
 def pdm_build_initialize(context: Context) -> None:
+    """Set the wheel's tags and add the tycmd binary to its scripts."""
     if context.target == 'sdist':
         return
     context.config_settings['--python-tag'] = 'py3'

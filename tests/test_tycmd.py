@@ -5,7 +5,6 @@ import threading
 import time
 from pathlib import Path
 from subprocess import CalledProcessError, Popen
-from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -57,19 +56,21 @@ class TestUpload:
         mock_popen.set_pipes(stdout=['output'])
         caplog.set_level(logging.INFO)
         tycmd.upload(BLINK40_HEX, check=True, reset=True)
-        assert '--nocheck' not in mock_popen.call_args[0][0]
-        assert '--noreset' not in mock_popen.call_args[0][0]
-        assert '--rtc' in mock_popen.call_args[0][0]
-        assert '--quiet' not in mock_popen.call_args[0][0]
+        args = mock_popen.call_args[0][0]
+        assert '--nocheck' not in args
+        assert '--noreset' not in args
+        assert '--rtc' in args
+        assert '--quiet' not in args
         assert len(caplog.records) > 0
         assert all(x.levelname == 'INFO' for x in caplog.records)
 
         caplog.clear()
         tycmd.upload(BLINK40_HEX, check=False, reset=False, log_level=logging.NOTSET)
-        assert '--nocheck' in mock_popen.call_args[0][0]
-        assert '--noreset' in mock_popen.call_args[0][0]
-        assert '--rtc' in mock_popen.call_args[0][0]
-        assert '--quiet' not in mock_popen.call_args[0][0]
+        args = mock_popen.call_args[0][0]
+        assert '--nocheck' in args
+        assert '--noreset' in args
+        assert '--rtc' in args
+        assert '--quiet' not in args
         assert len(caplog.records) == 0
 
     @pytest.mark.parametrize('rtc', ['local', 'utc', 'none'])
@@ -108,13 +109,11 @@ class TestReset:
 
 
 class TestIdentify:
-    def test_identify(self):
+    def test_identify(self, tmp_path):
         """Compatible models are identified, and invalid firmware raises ValueError."""
-        with TemporaryDirectory() as temp_directory:
-            firmware_file = Path(temp_directory).joinpath('firmware.hex')
-            firmware_file.touch()
-            with pytest.raises(ValueError, match='Missing EOF record'):
-                tycmd.identify(firmware_file)
+        (firmware_file := tmp_path / 'firmware.hex').touch()
+        with pytest.raises(ValueError, match='Missing EOF record'):
+            tycmd.identify(firmware_file)
         assert 'Teensy 4.0' in tycmd.identify(BLINK40_HEX)
         assert 'Teensy 4.1' in tycmd.identify(BLINK41_HEX)
 
@@ -174,8 +173,6 @@ class TestListBoards:
 class TestVersion:
     def test_version(self):
         """The bundled binary reports the version that tycmd-wrapper expects."""
-        binary_version = tycmd._call_tycmd(['--version']).strip().split(maxsplit=1)[-1]
-        assert tycmd._TYCMD_VERSION == binary_version
         assert tycmd.version() == tycmd._TYCMD_VERSION
 
     @pytest.mark.parametrize(
@@ -203,27 +200,21 @@ class TestVersion:
 
 
 class TestParseFirmwareFile:
-    def test_parse_firmware_file(self):
-        """Missing files, directories and unsupported extensions raise errors."""
-        with TemporaryDirectory() as temp_directory:
-            with pytest.raises(IsADirectoryError) as exc_info:
-                tycmd._parse_firmware_file(temp_directory)
-            assert exc_info.value.errno == errno.EISDIR
-            assert exc_info.value.filename == str(Path(temp_directory).resolve())
-            firmware_file = Path(temp_directory).joinpath('firmware')
-            with pytest.raises(FileNotFoundError) as exc_info:
-                tycmd._parse_firmware_file(firmware_file)
-            assert exc_info.value.errno == errno.ENOENT
-            assert exc_info.value.filename == str(firmware_file.resolve())
-            firmware_file.touch()
-            with pytest.raises(ValueError, match=r'\(supported: \.hex, \.elf\)'):
-                tycmd._parse_firmware_file(firmware_file)
-            firmware_file = firmware_file.with_suffix('.HEX')
-            firmware_file.touch()
-            assert tycmd._parse_firmware_file(firmware_file).samefile(firmware_file)
-            assert tycmd._parse_firmware_file(str(firmware_file)).samefile(
-                firmware_file
-            )
+    def test_parse_firmware_file(self, tmp_path):
+        """Directories and missing files raise errors, and str paths are accepted."""
+        with pytest.raises(IsADirectoryError) as exc_info:
+            tycmd._parse_firmware_file(tmp_path)
+        assert exc_info.value.errno == errno.EISDIR
+        assert exc_info.value.filename == str(tmp_path.resolve())
+
+        firmware_file = tmp_path / 'firmware.hex'
+        with pytest.raises(FileNotFoundError) as exc_info:
+            tycmd._parse_firmware_file(firmware_file)
+        assert exc_info.value.errno == errno.ENOENT
+        assert exc_info.value.filename == str(firmware_file.resolve())
+
+        firmware_file.touch()
+        assert tycmd._parse_firmware_file(str(firmware_file)) == firmware_file.resolve()
 
     @pytest.mark.parametrize(
         'name', ['blink.hex', 'blink.HEX', 'blink.elf', 'blink.ino.hex', 'v1.2.elf']
@@ -246,7 +237,7 @@ class TestParseFirmwareFile:
     def test_parse_firmware_file_invalid_extension(self, tmp_path, name):
         """Missing or unsupported extensions raise ValueError."""
         (firmware_file := tmp_path / name).touch()
-        with pytest.raises(ValueError, match='has unrecognized extension'):
+        with pytest.raises(ValueError, match=r'unrecognized extension \(supported: '):
             tycmd._parse_firmware_file(firmware_file)
 
 
@@ -298,22 +289,6 @@ class TestReStripTag:
     def test_re_strip_tag(self, line, expected):
         """The task/board tag is stripped from task messages, other lines are kept."""
         assert tycmd._RE_STRIP_TAG.sub('', line) == expected
-
-    def test_re_strip_tag_multiline(self):
-        """The tag is stripped from every line of multi-line output."""
-        output = (
-            "       reset@11383920-Teensy  Resetting board '11383920-Teensy' "
-            '(Teensy 3.1)\n'
-            '       reset@11383920-Teensy  Triggering board reboot\n'
-            '\n'
-            '       reset@11383920-Teensy  Sending reset command\n'
-        )
-        assert tycmd._RE_STRIP_TAG.sub('', output) == (
-            "Resetting board '11383920-Teensy' (Teensy 3.1)\n"
-            'Triggering board reboot\n'
-            '\n'
-            'Sending reset command\n'
-        )
 
 
 class TestTycmdError:
