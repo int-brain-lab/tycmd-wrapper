@@ -23,73 +23,93 @@ build-backend = "pdm.backend"
 
 [tool.pdm.version]
 source = "file"
-path = "tycmd.py"
+path = "tycmd/__init__.py"
 
 [tool.pdm.build]
-includes = ["tycmd.py", "py.typed"]
+includes = ["tycmd"]
 source-includes = ["tests", "docs", "*.md"]
 excludes = [".gitignore", "docs/build"]
 run-setuptools = false
 is-purelib = false
+
+[tool.uv]
+# reinstall when the version, the pinned tycmd version or the build hook changes
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "pdm_build.py" },
+  { file = "tycmd/__init__.py" },
+]
 
 [tool.uv.dependency-groups]
 doc = { requires-python = ">=3.14" }
 
 [dependency-groups]
 dev = [
-    { include-group = "build" },
-    { include-group = "doc" },
-    { include-group = "lint" },
-    { include-group = "test" },
-    { include-group = "typing" },
+  { include-group = "build" },
+  { include-group = "doc" },
+  { include-group = "lint" },
+  { include-group = "test" },
+  { include-group = "typing" },
 ]
 build = [
-    "pdm-backend",
+  "pdm-backend",
 ]
 lint = [
-    "ruff>=0.15.0",
+  "ruff>=0.15.0",
 ]
 typing = [
-    "mypy>=1.10.1",
+  "mypy>=1.10.1",
 ]
 test = [
-    { include-group = "lint" },
-    { include-group = "typing" },
-    { include-group = "tox" },
-    "pytest>=8.2.2",
-    "pytest-cov>=5.0.0",
+  { include-group = "lint" },
+  { include-group = "typing" },
+  { include-group = "tox" },
+  "pytest>=8.2.2",
+  "pytest-cov>=5.0.0",
 ]
 tox = [
-    "tox>=4.25.0",
-    "tox-uv>=1.11",
+  "tox>=4.25.0",
+  "tox-uv>=1.11",
 ]
 ci = [
-    "coveralls>=4.0.1",
-    "pytest-github-actions-annotate-failures>=0.3.0",
+  "coveralls>=4.0.1",
+  "pytest-github-actions-annotate-failures>=0.3.0",
 ]
 doc = [
-    "sphinx>=8.0.0",
-    "sphinx-rtd-theme>=2.0.0",
-    "myst-parser>=3.0.1",
+  "sphinx>=8.0.0",
+  "sphinx-autodoc-typehints>=3.10",
+  "myst-parser>=3.0.1",
+  "shibuya>=2026.7.12",
+  "sphinx-llm>=1.1.0",
+  "sphinx-sitemap>=2.9.0",
 ]
-
-[tool.ruff]
-include = ["pyproject.toml", "tycmd.py", "tests/*.py"]
 
 [tool.ruff.format]
 quote-style = "single"
 
 [tool.ruff.lint]
-extend-select = ["D"]
+extend-select = [
+  "A",   # flake8-builtins
+  "ANN", # flake8-annotations
+  "ARG", # flake8-unused-arguments
+  "D",   # pydocstyle
+  "FBT", # flake8-boolean-trap
+  "ICN", # flake8-import-conventions
+  "SLF", # flake8-self
+  "T20", # flake8-print
+  "TID", # flake8-tidy-imports
+]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["D"]
+"docs/source/conf.py" = ["A001", "DTZ011"]  # names and values required by Sphinx
+"pdm_build.py" = ["T201"]  # progress messages of the build hook
+"tests/*.py" = ["ANN", "D", "SLF001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.mypy]
-files = ["tycmd.py"]
+files = ["tycmd"]
 
 [tool.pytest.ini_options]
 addopts    = "--cov=tycmd"

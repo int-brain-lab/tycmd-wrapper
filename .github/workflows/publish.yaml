@@ -5,6 +5,10 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
+# read-only by default - the publish and release jobs request what they need
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build (${{ matrix.os }})

@@ -1,3 +1,6 @@
+.. meta::
+   :description: How to contribute to tycmd-wrapper.
+
 Developer Guide
 ================
 

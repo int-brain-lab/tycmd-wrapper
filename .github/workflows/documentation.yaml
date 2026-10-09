@@ -7,7 +7,12 @@ on:
       - main
     paths:
       - 'docs/**'
-      - 'tycmd.py'
+      - 'tycmd/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'pyproject.toml'
+      - 'uv.lock'
 
 permissions:
   contents: write

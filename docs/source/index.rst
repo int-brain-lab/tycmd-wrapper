@@ -1,3 +1,6 @@
+.. meta::
+   :description: Landing page of the tycmd-wrapper documentation.
+
 .. include:: ../../README.md
    :parser: myst_parser.sphinx_
 
