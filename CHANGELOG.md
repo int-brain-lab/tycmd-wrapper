@@ -10,12 +10,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- allow for filtering by board family
+- `TycmdError`, a `subprocess.CalledProcessError` raised whenever tycmd fails - its message is
+  tycmd's own error message
+- `Board` type for the entries returned by `list_boards()`, and `Capability`, `BoardAction` and
+  `RtcMode` type aliases
+- warnings from tycmd are logged as they occur, and requests to press the board's button are
+  always logged as warnings, regardless of `log_level`
 
 ### Changed
 
+- **breaking:** options of `upload()` and `reset()` are keyword-only, and `upload()`'s
+  `reset_board` and `rtc_mode` arguments are renamed to `reset` and `rtc`
+- **breaking:** failing tycmd calls raise `TycmdError` instead of `ChildProcessError`
+- **breaking:** `identify()` raises `ValueError` if tycmd can't load the firmware file
+- **breaking:** `version()` raises `RuntimeError` if the version can't be determined
+- **breaking:** `upload()` raises `ValueError` for an invalid `rtc` value
+- **breaking:** only the tycmd binary bundled with tycmd-wrapper is used - there is no fallback to
+  a `tycmd` on the PATH anymore
+- `list_boards()` always includes `serial` and `description`, set to `None` if a board doesn't
+  report them
+- `FileNotFoundError` and `IsADirectoryError` for firmware files carry `errno` and `filename`
+- tycmd's output is decoded as UTF-8, independent of the system's locale
+- tycmd is killed if a call is interrupted (e.g. by `KeyboardInterrupt`) instead of being waited
+  for
+- tycmd-wrapper is a package (`tycmd/`) instead of a single module
 - improved typehints
 - simplified workflow for publishing to PyPI
+
+### Removed
+
+- support for `.ehex` firmware files, which the bundled tycmd 0.9.9 can't load
+
+### Fixed
+
+- `version()` returns the complete version string, including suffixes such as `-beta.2`
+- board tags are stripped from every line of tycmd's output, including tags of boards without a
+  serial number, of secondary interfaces and of generic boards
+- `identify()` handles backslashes, tabs and newlines in firmware filenames
+- type checkers now pick up the `py.typed` marker
 
 ## [0.3.1] - 2026-09-27
 

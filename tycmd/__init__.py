@@ -1,22 +1,20 @@
-"""A python wrapper for tycmd."""
+"""A Python wrapper for tycmd."""
 
+import errno
 import json
 import logging
 import re
-import shutil
+import shlex
 import sys
-import sysconfig
-from functools import cache
-from os import PathLike
+from functools import cache, partial
+from importlib.metadata import PackageNotFoundError, files
+from os import PathLike, strerror
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, Popen
 from threading import Thread
-from typing import Literal, TypeAlias, TypedDict, cast
+from typing import IO, Literal, TypeAlias, TypedDict, cast, get_args
 
 log = logging.getLogger(__name__)
-
-Family: TypeAlias = Literal['Teensy', 'Generic']
-"""Family of a board."""
 
 RtcMode: TypeAlias = Literal['local', 'utc', 'none']
 """How to set the board's real-time clock on upload."""
@@ -39,36 +37,48 @@ BoardAction: TypeAlias = Literal['add', 'change', 'miss', 'remove']
 """Event that produced a board entry."""
 
 __version__ = '0.3.1'
+"""Version of tycmd-wrapper."""
 _TYCMD_VERSION = '0.9.9'
+"""Version of the bundled tycmd binary."""
 _TYCMD_NAME = 'tycmd.exe' if sys.platform == 'win32' else 'tycmd'
+"""File name of the tycmd binary."""
 _OPTIONAL_BOARD_KEYS = ('serial', 'description')
+"""Keys of :class:`Board` that tycmd omits if a board doesn't report them."""
 _RE_STRIP_TAG = re.compile(r'^[ \t]*\w+@.+? {2}', re.MULTILINE)
-_RE_VERSION = re.compile(r'\d+\.\d+\.\d+')  # match semantic version number
-_VALID_FIRMWARE_EXT = ('.hex', '.elf', '.ehex')
+"""Matches the ``<task>@<board tag>`` prefix of tycmd's task messages."""
+_RE_USER_ACTION = re.compile(r'\bpress button\b', re.IGNORECASE)
+"""Matches status messages asking the user to press the board's button."""
+_VALID_FIRMWARE_EXT = ('.hex', '.elf')
+"""File extensions of supported firmware files."""
+
+
+class TycmdError(CalledProcessError):
+    """Raised when tycmd exits with an error."""
+
+    def __str__(self) -> str:
+        """Return tycmd's error message, or the exit status if there is none."""
+        return self.stderr or super().__str__()
 
 
 class Board(TypedDict):
-    """A :class:`~typing.TypedDict` describing a board."""
+    """A board as reported by tycmd."""
 
     action: BoardAction
-    """The event that produced this entry."""
+    """Event that produced this entry."""
     tag: str
-    """The entries' tag, e.g. ``'12345678-Teensy@1'``."""
+    """Tag of the board, e.g. ``'12345678-Teensy'``."""
+    serial: str | None
+    """Serial number, or :py:obj:`None` if not reported."""
+    description: str | None
+    """USB description, or :py:obj:`None` if not reported."""
     model: str
-    """Model name of the board, e.g. ``'Teensy 4.1'``."""
+    """Model name, e.g. ``'Teensy 4.1'``."""
     location: str
-    """USB location of the board, e.g. ``'usb-3-2'``."""
+    """USB location, e.g. ``'usb-3-2'``."""
     capabilities: list[Capability]
     """Capabilities of the board."""
-    interfaces: list[list[str]]  # [name, path]
-    """Interfaces of the board as ``[name, path]`` pairs.
-
-    For example: ``['Serial', '/dev/ttyACM0']``.
-    """
-    serial: str | None
-    """Serial number of the board, or :py:obj:`None` if it does not report one."""
-    description: str | None
-    """Description of the board as reported by USB, or :py:obj:`None`."""
+    interfaces: list[list[str]]
+    """Interfaces as ``[name, path]`` pairs, e.g. ``['Serial', '/dev/ttyACM0']``."""
 
 
 def upload(
@@ -76,154 +86,188 @@ def upload(
     *,
     serial: str | None = None,
     port: str | None = None,
-    family: Family | None = None,
     check: bool = True,
     reset: bool = True,
     rtc: RtcMode = 'local',
     log_level: int = logging.INFO,
 ) -> None:
     """
-    Upload firmware to board. Status messages are logged.
+    Upload firmware to a board.
 
     Parameters
     ----------
     filename : PathLike or str
         Path to the firmware file.
     serial : str, optional
-        Serial number of the targeted board.
+        Serial number of the board.
     port : str, optional
-        Port of the targeted board.
-    family : Family, optional
-        Family of the targeted board.
+        Port of the board.
     check : bool, default: True
-        Check if the board is compatible before upload.
+        Check that the firmware is compatible with the board.
     reset : bool, default: True
-        Reset the device once the upload is finished.
+        Reset the board after the upload.
     rtc : RtcMode, default: 'local'
-        Set RTC if supported: 'local', 'utc' or 'none'.
+        Set the board's real-time clock, if it has one: 'local', 'utc' or 'none'.
     log_level : int, default: :py:data:`logging.INFO`
-        Log level.
+        Log level for tycmd's status messages.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the firmware file does not exist.
+    IsADirectoryError
+        If the firmware path is a directory.
+    ValueError
+        If the firmware file has an unsupported extension or ``rtc`` is invalid.
+    TycmdError
+        If tycmd fails.
     """
+    if rtc not in (rtc_modes := get_args(RtcMode)):
+        raise ValueError(f'rtc must be one of {", ".join(rtc_modes)}, not {rtc!r}')
     filename = str(_parse_firmware_file(filename))
     args = ['upload']
     if not check:
         args.append('--nocheck')
     if not reset:
         args.append('--noreset')
-    if log_level == logging.NOTSET:
-        args.append('--quiet')
     args.extend(['--rtc', rtc, filename])
-    _call_tycmd(args, port=port, serial=serial, family=family, log_level=log_level)
+    _call_tycmd(args, serial=serial, port=port, log_level=log_level)
 
 
 def reset(
     *,
     serial: str | None = None,
     port: str | None = None,
-    family: Family | None = None,
     bootloader: bool = False,
     log_level: int = logging.INFO,
 ) -> None:
     """
-    Reset board. Status messages are logged.
+    Reset a board.
 
     Parameters
     ----------
     serial : str, optional
-        Serial number of targeted board.
+        Serial number of the board.
     port : str, optional
-        Port of targeted board.
-    family : Family, optional
-        Family of the targeted board.
+        Port of the board.
     bootloader : bool, default: False
-        Switch board to bootloader if True.
+        Reboot into the bootloader instead.
     log_level : int, default: :py:data:`logging.INFO`
-        Log level.
+        Log level for tycmd's status messages.
+
+    Raises
+    ------
+    TycmdError
+        If tycmd fails.
     """
     args = ['reset']
     if bootloader:
         args.append('--bootloader')
-    if log_level == logging.NOTSET:
-        args.append('--quiet')
-    _call_tycmd(args, serial=serial, port=port, family=family, log_level=log_level)
+    _call_tycmd(args, serial=serial, port=port, log_level=log_level)
 
 
 def identify(filename: PathLike | str) -> list[str]:
     """
-    Identify models compatible with firmware.
+    Identify the board models compatible with a firmware file.
 
     Parameters
     ----------
-    filename : PathLike | str
+    filename : PathLike or str
         Path to the firmware file.
 
     Returns
     -------
     list[str]
-        List of models compatible with firmware.
+        Compatible models, e.g. ``['Teensy 4.0', 'Teensy 4.0 (beta 1)']``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the firmware file does not exist.
+    IsADirectoryError
+        If the firmware path is a directory.
+    ValueError
+        If the firmware file has an unsupported extension or can't be loaded, or if
+        tycmd's output can't be parsed (e.g. if the filename contains ``"``).
+    TycmdError
+        If tycmd fails.
     """
     filename = str(_parse_firmware_file(filename))
-    json_str = _call_tycmd(args=['identify', filename, '--json'], raise_on_stderr=True)
+    json_str = _call_tycmd(['identify', filename, '--json'])
+
+    # tycmd doesn't escape the filename in its JSON output: escaping backslashes covers
+    # Windows paths, strict=False covers control characters, a '"' remains unsupported
     json_str = json_str.replace('\\', '\\\\')
-    output = json.loads(json_str)
+    try:
+        output = json.loads(json_str, strict=False)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Could not parse tycmd's output for '{filename}'") from e
+
+    # tycmd exits with 0 even if it can't load the firmware
+    if 'error' in output:
+        raise ValueError(output['error'])
     return output.get('models', [])
 
 
-def list_boards(log_level: int = logging.NOTSET) -> list[Board]:
+def list_boards() -> list[Board]:
     """
-    List available boards.
-
-    Parameters
-    ----------
-    log_level : int, default: :py:data:`logging.NOTSET`
-        Log level.
+    List the available boards.
 
     Returns
     -------
     list[Board]
-        List of available boards. ``serial`` and ``description`` are :py:obj:`None`
-        if the board does not report them.
+        Available boards.
+
+    Raises
+    ------
+    TycmdError
+        If tycmd fails.
     """
-    output = _call_tycmd(['list', '-O', 'json', '-v'], log_level=log_level)
+    output = _call_tycmd(['list', '-O', 'json', '-v'])
     return [_normalize_board(board) for board in json.loads(output)]
 
 
 def version() -> str:
     """
-    Return version information from tycmd binary.
+    Return the version of the bundled tycmd binary.
 
     Returns
     -------
     str
-        The version of tycmd.
+        Version of tycmd, e.g. ``'0.9.9'``.
 
     Raises
     ------
     RuntimeError
-        If the version string could not be determined.
+        If the version can't be determined.
     """
-    output = _call_tycmd(['--version'])
-    match = _RE_VERSION.search(output)
-    if match is None:
-        raise ChildProcessError('Could not determine tycmd version')
-    return match.group()
+    try:
+        output = _call_tycmd(['--version'])
+        _, tycmd_version = output.split(maxsplit=1)
+    except Exception as e:
+        raise RuntimeError('Could not determine the version of tycmd') from e
+    return tycmd_version
 
 
 def _normalize_board(board: dict) -> Board:
-    """Fill in the keys that tycmd omits when a board doesn't report them."""
+    """Add the keys that tycmd omits if a board doesn't report them."""
     for key in _OPTIONAL_BOARD_KEYS:
         board.setdefault(key, None)
     return cast('Board', board)
 
 
 def _parse_firmware_file(filename: PathLike | str) -> Path:
+    """Return the resolved path of a firmware file, or raise if it's not usable."""
     filepath = Path(filename).resolve()
     if not filepath.exists():
-        raise FileNotFoundError(filepath)
+        raise FileNotFoundError(errno.ENOENT, strerror(errno.ENOENT), str(filepath))
     if filepath.is_dir():
-        raise IsADirectoryError(filepath)
-    if len(ext := filepath.suffixes) == 0 or ext[-1].lower() not in _VALID_FIRMWARE_EXT:
-        raise ValueError(f"'{filepath.name}' has unrecognized extension")
+        raise IsADirectoryError(errno.EISDIR, strerror(errno.EISDIR), str(filepath))
+    if filepath.suffix.lower() not in _VALID_FIRMWARE_EXT:
+        raise ValueError(
+            f"'{filepath.name}' has unrecognized extension "
+            f'(supported: {", ".join(_VALID_FIRMWARE_EXT)})'
+        )
     return filepath
 
 
@@ -233,74 +277,82 @@ def _call_tycmd(
     serial: str | None = None,
     port: str | None = None,
     family: str | None = None,
-    raise_on_stderr: bool = False,
     log_level: int = logging.NOTSET,
 ) -> str:
-    args = _assemble_args(args, serial=serial, family=family, port=port)
-    log.debug('Calling subprocess: %s', ' '.join(args))
+    """Run tycmd, log its output and return its stdout."""
+    args = _assemble_args(args, serial=serial, port=port, family=family)
+    log.debug('Calling subprocess: %s', shlex.join(args))
 
-    # Call tycmd
-    with Popen(
-        args, stdout=PIPE, stderr=PIPE, encoding='utf-8', errors='replace', bufsize=1
-    ) as p:
-        if log_level > logging.NOTSET:
-            assert p.stdout is not None  # noqa: S101
-            assert p.stderr is not None  # noqa: S101
-            stdout_stream, stderr_stream = p.stdout, p.stderr
+    # stdout (status messages) is logged at log_level, stderr (warnings and errors) at
+    # WARNING - stderr is read in a thread, so neither pipe can fill up and block tycmd
+    stdout_lines: list[str] = []
+    stderr_lines: list[str] = []
+    with Popen(args, stdout=PIPE, stderr=PIPE, encoding='utf-8', errors='replace') as p:
+        assert p.stdout is not None
+        assert p.stderr is not None
+        stderr_thread = Thread(
+            target=partial(_consume_pipe, p.stderr, stderr_lines, logging.WARNING)
+        )
+        stderr_thread.start()
+        try:
+            _consume_pipe(p.stdout, stdout_lines, log_level)
+        except BaseException:
+            p.kill()  # tycmd might never exit on its own, e.g. waiting for a button press
+            raise
+        finally:
+            stderr_thread.join()  # before leaving the with-block, which closes the pipes
+    stdout = '\n'.join(stdout_lines).strip()
+    stderr = '\n'.join(stderr_lines).strip()
 
-            stderr_chunks: list[str] = []
-            stderr_thread = Thread(
-                target=lambda: stderr_chunks.append(''.join(stderr_stream)), daemon=True
-            )
-            stderr_thread.start()
-
-            stdout = ''
-            for line in stdout_stream:
-                stripped_line = _RE_STRIP_TAG.sub('', line, count=1).strip()
-                log.log(level=log_level, msg=stripped_line)
-                stdout += stripped_line
-
-            stderr_thread.join()
-            stderr = stderr_chunks[0]
-        else:
-            stdout, stderr = p.communicate()
-            stdout = _RE_STRIP_TAG.sub('', stdout).strip()
-    stderr = _RE_STRIP_TAG.sub('', stderr).strip()
-
-    # Raise non-zero exit codes as a ChildProcessError
     if p.returncode != 0:
-        e = CalledProcessError(returncode=p.returncode, cmd=p.args)
-        raise ChildProcessError(stderr) from e
-
-    # tycmd doesn't always set a non-negative exit code when an error occurs.
-    # If raise_on_stderr is True and the subprocess' stderr is not None we'll
-    # still raise a ChildProcessError despite the exit code being 0.
-    if raise_on_stderr and len(stderr) > 0:
-        raise ChildProcessError(stderr)
-
+        raise TycmdError(p.returncode, p.args, output=stdout, stderr=stderr)
     return stdout
+
+
+def _consume_pipe(stream: IO[str], lines: list[str], log_level: int) -> None:
+    """Strip, collect and log each line - button prompts always at WARNING."""
+    for line in stream:
+        stripped_line = _RE_STRIP_TAG.sub('', line).strip()
+        lines.append(stripped_line)
+        if not stripped_line:
+            continue
+        if _RE_USER_ACTION.search(stripped_line):
+            log.warning(stripped_line)
+        elif log_level > logging.NOTSET:
+            log.log(log_level, stripped_line)
 
 
 @cache
 def _resolve_tycmd() -> str:
-    """Resolve the path to the bundled tycmd binary."""
-    candidate = Path(sysconfig.get_path('scripts')) / _TYCMD_NAME
-    if candidate.is_file():
-        return str(candidate)
-    return shutil.which(_TYCMD_NAME) or _TYCMD_NAME
+    """Return the path of the bundled tycmd binary."""
+    try:
+        record = files('tycmd-wrapper') or []
+    except PackageNotFoundError:
+        record = []
+    for file in record:
+        if (
+            file.name == _TYCMD_NAME
+            and (path := Path(file.locate()).resolve()).is_file()
+        ):
+            return str(path)
+    raise FileNotFoundError(
+        f'Could not find the {_TYCMD_NAME} binary bundled with tycmd-wrapper - '
+        'try reinstalling the package'
+    )
 
 
 def _assemble_args(
     args: list[str],
-    port: str | None = None,
     serial: str | None = None,
+    port: str | None = None,
     family: str | None = None,
 ) -> list[str]:
+    """Return the tycmd command line, with a ``--board`` tag if a board is given."""
     output = [_resolve_tycmd(), *args]
-    if any(x is not None for x in (port, serial, family)):
+    if any(x is not None for x in (serial, port, family)):
         tag = ''.join(
             (
-                '' if serial is None else str(serial),
+                '' if serial is None else serial,
                 '' if family is None else f'-{family}',
                 '' if port is None else f'@{port}',
             )
