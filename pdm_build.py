@@ -7,7 +7,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from platform import machine, system
+from platform import libc_ver, machine, system
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
@@ -127,6 +127,10 @@ def pdm_build_initialize(context: Context) -> None:
     if system() == 'Darwin':
         plat_version = MACOS_DEPLOYMENT_TARGET.replace('.', '_')
         context.config_settings['--plat-name'] = f'macosx_{plat_version}_{machine()}'
+    elif system() == 'Linux' and (libc := libc_ver())[0] == 'glibc':
+        glibc_major, glibc_minor = libc[1].split('.')[:2]
+        plat_name = f'manylinux_{glibc_major}_{glibc_minor}_{machine()}'
+        context.config_settings['--plat-name'] = plat_name
 
     output_dir = Path(__file__).parent / 'bin'
     tycmd = _ensure_tycmd(output_dir)
