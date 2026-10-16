@@ -5,17 +5,20 @@ on:
     branches:
       - main
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
 
 permissions:
   contents: read
+
+# cancel superseded runs on pull requests, but let every run on main finish
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   Quality:
     name: "ruff & mypy"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -25,10 +28,10 @@ jobs:
           version-file: uv.lock
       - run: ruff check
       - run: ruff format --check
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.6.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
         with:
           enable-cache: true
-      - uses: ./.github/actions/ensure-tycmd
+      - uses: $/.github/actions/ensure-tycmd
         with:
           cache-key-os: ubuntu-latest
           manylinux-image: quay.io/pypa/manylinux_2_28_x86_64:2026.10.10-1@sha256:4131ddd7acb9c6c966af02fe7e71edc51e078c2d41f475966697676430bfa2ae
@@ -41,6 +44,7 @@ jobs:
     name: Testing (${{ matrix.os }})
     needs: [Quality]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       matrix:
         include:
@@ -55,8 +59,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.6.0
-      - uses: ./.github/actions/ensure-tycmd
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+      - uses: $/.github/actions/ensure-tycmd
         with:
           cache-key-os: ${{ matrix.os }}
           manylinux-image: ${{ matrix.manylinux-image }}
@@ -76,6 +80,7 @@ jobs:
     needs: Testing
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329  # v2.3.8
         continue-on-error: true
