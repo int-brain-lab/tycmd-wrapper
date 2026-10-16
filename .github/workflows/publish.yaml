@@ -10,8 +10,30 @@ permissions:
   contents: read
 
 jobs:
+  check:
+    name: Check version tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check that a version tag matching the package's version is published
+        # also guards manual runs, which could otherwise publish from any branch. Ref names
+        # are passed via env, as expanding them in the script would allow code injection.
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" != tag ]; then
+            echo "::error::Publishing needs a version tag, not a $REF_TYPE"
+            exit 1
+          fi
+          VERSION=$(sed -n "s/^__version__ = '\(.*\)'$/\1/p" tycmd/__init__.py)
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Tag $TAG doesn't match the package's version $VERSION"
+            exit 1
+          fi
   build:
     name: Build (${{ matrix.os }})
+    needs: check
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     strategy:
@@ -83,4 +105,6 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" --generate-notes
+          TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: gh release create "$TAG" dist/* --repo "$REPOSITORY" --generate-notes
