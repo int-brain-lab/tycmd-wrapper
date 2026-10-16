@@ -36,7 +36,7 @@ Capability: TypeAlias = Literal[
 BoardAction: TypeAlias = Literal['add', 'change', 'miss', 'remove']
 """Event that produced a board entry."""
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 """Version of tycmd-wrapper."""
 _TYCMD_VERSION = '0.9.9'
 """Version of the bundled tycmd binary."""
