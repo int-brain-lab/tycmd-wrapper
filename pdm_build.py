@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -16,15 +17,29 @@ if TYPE_CHECKING:
 
 REPO_URL = 'https://github.com/Koromix/rygel'
 TYCMD_NAME = 'tycmd.exe' if system() == 'Windows' else 'tycmd'
+STAMP_NAME = 'tycmd.build'
+"""Next to the binary, records what it was built from - see _build_stamp()."""
 MACOS_DEPLOYMENT_TARGET = '11.0'
+FELIX_ARGS = ['-pFast', 'tycmd']
+"""Arguments for felix, rygel's build tool, to build tycmd."""
+
+
+def _read_constant(name: str) -> str:
+    content = Path(__file__).parent.joinpath('tycmd', '__init__.py').read_text()
+    match = re.search(
+        rf"^{re.escape(name)} = ['\"]([^'\"]+)['\"]", content, re.MULTILINE
+    )
+    if match is None:
+        raise RuntimeError(f'Could not find {name} in tycmd/__init__.py')
+    return match.group(1)
 
 
 def _tycmd_version() -> str:
-    content = Path(__file__).parent.joinpath('tycmd', '__init__.py').read_text()
-    match = re.search(r"_TYCMD_VERSION = ['\"]([^'\"]+)['\"]", content)
-    if match is None:
-        raise RuntimeError('Could not find _TYCMD_VERSION in tycmd/__init__.py')
-    return match.group(1)
+    return _read_constant('_TYCMD_VERSION')
+
+
+def _tycmd_commit() -> str:
+    return _read_constant('_TYCMD_COMMIT')
 
 
 def _check_version(binary: Path, version: str) -> None:
@@ -39,6 +54,7 @@ def build_tycmd(output_dir: Path) -> Path:
     """Clone tycmd source at the pinned version and build it via felix into `output_dir`."""
     is_windows = system() == 'Windows'
     version = _tycmd_version()
+    commit = _tycmd_commit()
     print(f'Building tycmd {version} for {system()} {machine()}...')
 
     # check if git executable is available
@@ -46,46 +62,45 @@ def build_tycmd(output_dir: Path) -> Path:
         raise RuntimeError('Could not find git executable')
 
     output_dir = output_dir.resolve()
+    # a failed rebuild mustn't leave the previous stamp next to a new binary
+    output_dir.joinpath(STAMP_NAME).unlink(missing_ok=True)
+
+    # git hooks export GIT_DIR, GIT_INDEX_FILE & co., which would point the git calls below at
+    # the calling repository instead of the clone - drop them, but keep config passed via the
+    # environment (e.g. `git -c http.proxy=...`), like git does for submodules
+    local_vars = subprocess.check_output(
+        ['git', 'rev-parse', '--local-env-vars'], text=True
+    ).split()
+    keep = {'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT'}
+    env = {k: v for k, v in os.environ.items() if k not in local_vars or k in keep}
+    if system() == 'Darwin':
+        env['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
 
     with TemporaryDirectory() as tmp:
-        # find tag
+        # clone rygel - its tytools release tags are named tytools/<version>
         src = Path(tmp, 'rygel')
+        tag = f'tytools/{version}'
+        clone = ['git', 'clone', '--depth=1', f'--branch={tag}', REPO_URL, str(src)]
         try:
-            result = subprocess.check_output(
-                ['git', 'ls-remote', '--tags', REPO_URL, 'tytools*'], text=True, cwd=tmp
-            )
-            tags = [
-                ref.split('\t', 1)[1].removeprefix('refs/tags/')
-                for ref in result.splitlines()
-            ]
-            tag = next(t for t in tags if 'tytools/' in t and t.endswith(f'/{version}'))
+            subprocess.check_call(clone, cwd=tmp, env=env)
+            cloned = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=src, env=env, text=True
+            ).strip()
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f'Could not list git tags for {REPO_URL}') from e
-        except StopIteration as e:
-            raise RuntimeError(
-                f'Could not find git tag matching tycmd {version} in {REPO_URL}'
-            ) from e
+            raise RuntimeError(f'Could not clone rygel {tag}') from e
 
-        # clone rygel
-        try:
-            subprocess.check_call(
-                ['git', 'clone', '--depth', '1', '--branch', tag, REPO_URL, str(src)],
-                cwd=tmp,
+        # make sure the tag still points to the pinned commit
+        if cloned != commit:
+            raise RuntimeError(
+                f'rygel {tag} is commit {cloned}, but {commit} is pinned'
             )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError('Could not clone rygel') from e
 
         # build tycmd
         try:
             bootstrap = src / ('bootstrap.bat' if is_windows else 'bootstrap.sh')
             felix = src / ('felix.exe' if is_windows else 'felix')
-            subprocess.check_call([str(bootstrap)], cwd=src, shell=is_windows)
-            build_env = os.environ.copy()
-            if system() == 'Darwin':
-                build_env['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
-            subprocess.check_call(
-                [str(felix), '-pFast', 'tycmd'], cwd=src, env=build_env
-            )
+            subprocess.check_call([str(bootstrap)], cwd=src, env=env, shell=is_windows)
+            subprocess.check_call([str(felix), *FELIX_ARGS], cwd=src, env=env)
             built = next(src.joinpath('bin').rglob(TYCMD_NAME))
         except StopIteration as e:
             raise FileNotFoundError('Could not find built tycmd binary') from e
@@ -99,17 +114,33 @@ def build_tycmd(output_dir: Path) -> Path:
 
     # check & return binary
     _check_version(binary, version)
+    output_dir.joinpath(STAMP_NAME).write_text(_build_stamp(commit))
     return binary
 
 
+def _build_stamp(commit: str) -> str:
+    """Return what a binary is built from - a change in it calls for a rebuild."""
+    stamp: dict[str, object] = {
+        'commit': commit,
+        'machine': machine(),
+        'felix': FELIX_ARGS,
+    }
+    if system() == 'Darwin':
+        stamp['macos'] = MACOS_DEPLOYMENT_TARGET
+    return json.dumps(stamp)
+
+
 def _ensure_tycmd(output_dir: Path) -> Path:
-    """Return a working tycmd binary in `output_dir` matching the pinned version."""
+    """Return a working tycmd binary in `output_dir`, built as currently configured."""
     version = _tycmd_version()
+    stamp = _build_stamp(_tycmd_commit())
     existing = output_dir / TYCMD_NAME
     if existing.exists():
         if system() != 'Windows':
             existing.chmod(0o755)
         try:
+            if output_dir.joinpath(STAMP_NAME).read_text() != stamp:
+                raise RuntimeError('built with a different configuration')
             _check_version(existing, version)
             return existing
         except (OSError, subprocess.SubprocessError, RuntimeError) as e:

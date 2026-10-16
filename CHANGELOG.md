@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-16
+
+_No new features, just strengthening the chain of trust._
+
+### Added
+
+- wheels and sdists on PyPI carry PEP 740 provenance attestations, linking them to the
+  workflow run that built them - the same files on GitHub Releases carry build provenance
+  attestations, verifiable with `gh attestation verify`
+
+### Changed
+
+- the build of the bundled tycmd binary checks that rygel's release tag still points to the
+  pinned commit
+- publishing to PyPI requires a version tag matching the package's version
+- GitHub Actions and the manylinux build images are pinned to exact versions, and release
+  builds compile tycmd from source without using any caches
+
 ## [0.4.0] - 2026-10-09
 
 ### Added
@@ -104,7 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 _First release._
 
 
-[Unreleased]: https://github.com/int-brain-lab/tycmd-wrapper/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/int-brain-lab/tycmd-wrapper/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/int-brain-lab/tycmd-wrapper/releases/tag/v0.4.1
 [0.4.0]: https://github.com/int-brain-lab/tycmd-wrapper/releases/tag/v0.4.0
 [0.3.1]: https://github.com/int-brain-lab/tycmd-wrapper/releases/tag/v0.3.1
 [0.3.0]: https://github.com/int-brain-lab/tycmd-wrapper/releases/tag/v0.3.0

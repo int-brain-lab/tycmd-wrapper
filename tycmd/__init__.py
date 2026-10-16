@@ -36,10 +36,12 @@ Capability: TypeAlias = Literal[
 BoardAction: TypeAlias = Literal['add', 'change', 'miss', 'remove']
 """Event that produced a board entry."""
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 """Version of tycmd-wrapper."""
 _TYCMD_VERSION = '0.9.9'
 """Version of the bundled tycmd binary."""
+_TYCMD_COMMIT = '979a86795d15cad1541f8a6bb70090e9823881e2'
+"""Commit of rygel's tytools release tag that the bundled tycmd binary is built from."""
 _TYCMD_NAME = 'tycmd.exe' if sys.platform == 'win32' else 'tycmd'
 """File name of the tycmd binary."""
 _OPTIONAL_BOARD_KEYS = ('serial', 'description')
