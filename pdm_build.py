@@ -62,6 +62,17 @@ def build_tycmd(output_dir: Path) -> Path:
         raise RuntimeError('Could not find git executable')
 
     output_dir = output_dir.resolve()
+    # a failed rebuild mustn't leave the previous stamp next to a new binary
+    output_dir.joinpath(STAMP_NAME).unlink(missing_ok=True)
+
+    # git hooks export GIT_DIR, GIT_INDEX_FILE & co., which would point the git calls below at
+    # the calling repository instead of the clone - drop them, like git does for submodules
+    local_vars = subprocess.check_output(
+        ['git', 'rev-parse', '--local-env-vars'], text=True
+    ).split()
+    env = {k: v for k, v in os.environ.items() if k not in local_vars}
+    if system() == 'Darwin':
+        env['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
 
     with TemporaryDirectory() as tmp:
         # clone rygel - its tytools release tags are named tytools/<version>
@@ -69,15 +80,14 @@ def build_tycmd(output_dir: Path) -> Path:
         tag = f'tytools/{version}'
         clone = ['git', 'clone', '--depth=1', f'--branch={tag}', REPO_URL, str(src)]
         try:
-            subprocess.check_call(clone, cwd=tmp)
+            subprocess.check_call(clone, cwd=tmp, env=env)
+            cloned = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=src, env=env, text=True
+            ).strip()
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f'Could not clone rygel {tag}') from e
 
-        # make sure the tag still points to the pinned commit. --git-dir, as an inherited
-        # GIT_DIR (e.g. in git hooks) would otherwise point git at another repository.
-        cloned = subprocess.check_output(
-            ['git', f'--git-dir={src / ".git"}', 'rev-parse', 'HEAD'], text=True
-        ).strip()
+        # make sure the tag still points to the pinned commit
         if cloned != commit:
             raise RuntimeError(
                 f'rygel {tag} is commit {cloned}, but {commit} is pinned'
@@ -87,11 +97,8 @@ def build_tycmd(output_dir: Path) -> Path:
         try:
             bootstrap = src / ('bootstrap.bat' if is_windows else 'bootstrap.sh')
             felix = src / ('felix.exe' if is_windows else 'felix')
-            subprocess.check_call([str(bootstrap)], cwd=src, shell=is_windows)
-            build_env = os.environ.copy()
-            if system() == 'Darwin':
-                build_env['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
-            subprocess.check_call([str(felix), *FELIX_ARGS], cwd=src, env=build_env)
+            subprocess.check_call([str(bootstrap)], cwd=src, env=env, shell=is_windows)
+            subprocess.check_call([str(felix), *FELIX_ARGS], cwd=src, env=env)
             built = next(src.joinpath('bin').rglob(TYCMD_NAME))
         except StopIteration as e:
             raise FileNotFoundError('Could not find built tycmd binary') from e
@@ -111,7 +118,11 @@ def build_tycmd(output_dir: Path) -> Path:
 
 def _build_stamp(commit: str) -> str:
     """Return what a binary is built from - a change in it calls for a rebuild."""
-    stamp: dict[str, object] = {'commit': commit, 'felix': FELIX_ARGS}
+    stamp: dict[str, object] = {
+        'commit': commit,
+        'machine': machine(),
+        'felix': FELIX_ARGS,
+    }
     if system() == 'Darwin':
         stamp['macos'] = MACOS_DEPLOYMENT_TARGET
     return json.dumps(stamp)

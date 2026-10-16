@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the build of the bundled tycmd binary checks that rygel's release tag still points to the
   pinned commit
 - publishing to PyPI requires a version tag matching the package's version
+- GitHub Actions and the manylinux build images are pinned to exact versions, and release
+  builds compile tycmd from source without using any caches
 
 ## [0.4.0] - 2026-10-09
 
