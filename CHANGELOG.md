@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GitHub Releases include the build provenance attestation as a Sigstore bundle
+  (`tycmd_wrapper-<version>.sigstore.json`), e.g. for `gh attestation verify --bundle`
+
+### Changed
+
+- GitHub Actions workflows are audited with zizmor, and the repository with OpenSSF Scorecard
+
 ## [0.4.1] - 2026-10-16
 
 _No new features, just strengthening the chain of trust._
