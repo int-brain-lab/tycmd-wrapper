@@ -66,11 +66,13 @@ def build_tycmd(output_dir: Path) -> Path:
     output_dir.joinpath(STAMP_NAME).unlink(missing_ok=True)
 
     # git hooks export GIT_DIR, GIT_INDEX_FILE & co., which would point the git calls below at
-    # the calling repository instead of the clone - drop them, like git does for submodules
+    # the calling repository instead of the clone - drop them, but keep config passed via the
+    # environment (e.g. `git -c http.proxy=...`), like git does for submodules
     local_vars = subprocess.check_output(
         ['git', 'rev-parse', '--local-env-vars'], text=True
     ).split()
-    env = {k: v for k, v in os.environ.items() if k not in local_vars}
+    keep = {'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT'}
+    env = {k: v for k, v in os.environ.items() if k not in local_vars or k in keep}
     if system() == 'Darwin':
         env['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
 

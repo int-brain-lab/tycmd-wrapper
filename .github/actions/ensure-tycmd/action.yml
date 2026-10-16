@@ -8,8 +8,10 @@ inputs:
     description: >
       Identifier used in the cache key. Distinguishes runner.os values that are actually
       different architectures (e.g. ubuntu-latest vs ubuntu-24.04-arm both report Linux) -
-      pass matrix.os from the calling workflow, or a fixed string on a non-matrix job.
-    required: true
+      pass matrix.os from the calling workflow, or a fixed string on a non-matrix job. Not
+      needed if enable-cache is 'false'.
+    required: false
+    default: ''
   manylinux-image:
     description: >
       The manylinux container image (e.g. quay.io/pypa/manylinux_2_28_x86_64) this Linux build is
@@ -43,6 +45,7 @@ runs:
     - name: Determine tycmd version
       # Of tycmd/__init__.py, only _TYCMD_VERSION and _TYCMD_COMMIT affect the built binary -
       # the build settings are covered by hashing pdm_build.py.
+      if: inputs.enable-cache == 'true'
       id: tycmd-version
       shell: bash
       run: |

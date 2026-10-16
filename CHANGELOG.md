@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- wheels and sdists on PyPI carry PEP 740 provenance attestations, linking them to the
+  workflow run that built them - the same files on GitHub Releases carry build provenance
+  attestations, verifiable with `gh attestation verify`
+
 ### Changed
 
 - the build of the bundled tycmd binary checks that rygel's release tag still points to the
